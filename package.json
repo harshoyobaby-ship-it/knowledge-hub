@@ -1,0 +1,23 @@
+{
+  "name": "kharesiya-knowledge-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kharesiya Knowledge Hub monorepo — Next.js web app + RAG service",
+  "scripts": {
+    "dev": "npm run dev --prefix knowledge-hub",
+    "dev:web": "npm run dev --prefix knowledge-hub",
+    "dev:rag": "cd services/rag && bash scripts/dev.sh",
+    "build": "npm run build --prefix knowledge-hub",
+    "start": "npm run start --prefix knowledge-hub",
+    "lint": "npm run lint --prefix knowledge-hub",
+    "db:generate": "npm run db:generate --prefix knowledge-hub",
+    "db:push": "npm run db:push --prefix knowledge-hub",
+    "db:migrate": "npm run db:migrate --prefix knowledge-hub",
+    "db:studio": "npm run db:studio --prefix knowledge-hub",
+    "db:seed": "npm run db:seed --prefix knowledge-hub",
+    "email:weekly-reminders": "npm run email:weekly-reminders --prefix knowledge-hub",
+    "setup:supabase": "npm run setup:supabase --prefix knowledge-hub",
+    "rag:install": "cd services/rag && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt",
+    "install:all": "npm install --prefix knowledge-hub && npm run rag:install"
+  }
+}

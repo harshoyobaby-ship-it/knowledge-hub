@@ -1,0 +1,28 @@
+# Kharesiya Leave Policy
+
+## Overview
+All full-time employees are entitled to paid leave as per company policy.
+
+## Annual Leave
+- Employees receive 18 days of annual leave per calendar year.
+- Leave must be applied at least 3 working days in advance via the HR portal.
+- Manager approval is required before leave is confirmed.
+
+## Sick Leave
+- Up to 10 sick days per year with medical certificate for absences over 2 consecutive days.
+- Notify your manager before 10:00 AM on the day of absence.
+
+## How to Apply for Leave
+1. Log in to the HR portal at hr.kharesiya.internal
+2. Navigate to Leave Management → Apply Leave
+3. Select leave type (Annual / Sick / Casual)
+4. Choose dates and add reason
+5. Submit for manager approval
+6. You will receive email confirmation once approved
+
+## Casual Leave
+- Maximum 5 casual days per year.
+- Can be applied for same-day emergencies with manager notification.
+
+## Contact
+For questions, email hr@kharesiya.com or visit the HR desk on Floor 2.

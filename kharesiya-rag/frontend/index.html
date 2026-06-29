@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KharesiyaAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/bot/css/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Auth screen -->
+    <section id="auth-screen" class="auth-screen">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <div class="logo-mark">Kh</div>
+          <h1>KharesiyaAI</h1>
+          <p>Company-wide assistant — policies, SOPs, and knowledge for every employee.</p>
+        </div>
+
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">Sign in</button>
+          <button class="auth-tab" data-tab="register">Register</button>
+        </div>
+
+        <form id="login-form" class="auth-form">
+          <label>
+            Email
+            <input type="email" name="email" placeholder="you@kharesiya.com" required />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password" placeholder="••••••••" required />
+          </label>
+          <button type="submit" class="btn btn-primary">Sign in</button>
+        </form>
+
+        <form id="register-form" class="auth-form hidden">
+          <label>
+            Full name
+            <input type="text" name="full_name" placeholder="Your name" />
+          </label>
+          <label>
+            Email
+            <input type="email" name="email" placeholder="you@kharesiya.com" required />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password" placeholder="Min. 8 characters" minlength="8" required />
+          </label>
+          <button type="submit" class="btn btn-primary">Create account</button>
+        </form>
+
+        <div class="auth-divider"><span>or</span></div>
+
+        <form id="apikey-form" class="auth-form">
+          <label>
+            API Key
+            <input type="password" name="api_key" placeholder="khk_..." />
+          </label>
+          <button type="submit" class="btn btn-secondary">Continue with API key</button>
+        </form>
+
+        <p id="auth-error" class="auth-error hidden"></p>
+      </div>
+    </section>
+
+    <!-- Main app -->
+    <section id="main-screen" class="main-screen hidden">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo-mark sm">Kh</div>
+          <div>
+            <strong>KharesiyaAI</strong>
+            <span id="user-email" class="user-email"></span>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <h3>Documents</h3>
+          <button id="refresh-docs" class="btn btn-ghost btn-sm">Refresh list</button>
+          <ul id="doc-list" class="doc-list"></ul>
+        </div>
+
+        <button id="logout-btn" class="btn btn-ghost logout-btn">Sign out</button>
+      </aside>
+
+      <main class="chat-panel">
+        <header class="chat-header">
+          <div>
+            <h2>KharesiyaAI</h2>
+            <p>Ask anything about company policies, procedures, and official information.</p>
+          </div>
+        </header>
+
+        <div id="messages" class="messages">
+          <div class="welcome-card">
+            <h3>Welcome to KharesiyaAI</h3>
+            <p>Your company-wide assistant. Everyone can ask about HR, IT, operations, and more.</p>
+            <p>Try asking:</p>
+            <div class="suggestions">
+              <button class="suggestion" data-q="How do I apply for leave?">How do I apply for leave?</button>
+              <button class="suggestion" data-q="What is the onboarding process?">What is the onboarding process?</button>
+              <button class="suggestion" data-q="Summarize our company policies">Summarize our company policies</button>
+            </div>
+          </div>
+        </div>
+
+        <form id="chat-form" class="chat-input-bar">
+          <textarea
+            id="question-input"
+            rows="1"
+            placeholder="Ask about company policies, leave, onboarding, IT…"
+            required
+          ></textarea>
+          <button type="submit" class="btn btn-primary send-btn" id="send-btn" aria-label="Send">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
+          </button>
+        </form>
+      </main>
+    </section>
+  </div>
+
+  <script src="/bot/js/app.js"></script>
+</body>
+</html>
