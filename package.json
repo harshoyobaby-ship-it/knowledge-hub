@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "Kharesiya Knowledge Hub — frontend + backend",
+  "dependencies": {
+    "next": "16.2.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
   "scripts": {
     "dev": "npm run dev:web",
     "dev:web": "PATH=\"${PWD}/frontend/.tools/node-v22.14.0-darwin-arm64/bin:$PATH\" npm run dev --prefix frontend",
