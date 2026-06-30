@@ -1,64 +1,57 @@
 # Kharesiya Knowledge Platform
 
-Monorepo for the Kharesiya Knowledge Hub web application and RAG assistant service.
-
-## Project structure
+Simple monorepo with **3 folders**:
 
 ```
-.
-├── .env                    # Single environment file (all apps)
-├── .env.example            # Template — copy to .env
-├── docker-compose.yml      # RAG + Redis + Ollama
-├── package.json            # Root scripts
-├── knowledge-hub/          # Next.js web app (auth, LMS, dashboard)
-│   ├── src/
-│   └── prisma/
-└── services/
-    └── rag/                # FastAPI RAG microservice (Ollama, Pinecone)
+FINAL/
+├── frontend/     # Next.js web app (UI + API routes)
+├── backend/      # Python FastAPI + Prisma database
+├── config/       # .env.example, docker-compose
+├── .env          # Your secrets (create from config/.env.example)
+└── package.json  # Root scripts
 ```
 
 ## Quick start
 
 ```bash
-# 1. Configure environment
-cp .env.example .env
-# Edit .env with your Supabase, JWT, Groq, and Pinecone keys
+# 1. Environment
+cp config/.env.example .env
+# Edit .env with Supabase, JWT, Groq, Pinecone, SMTP keys
 
-# 2. Install dependencies
+# 2. Install
 npm run install:all
 
-# 3. Apply database migrations
+# 3. Database
 npm run db:migrate
+npm run db:seed
 
-# 4. Run both services (separate terminals)
+# 4. Run (two terminals)
 npm run dev:web    # http://localhost:3000
 npm run dev:rag    # http://localhost:8000
+
+# Stop both services
+npm run stop
 ```
 
-Or from the repo root:
+## What each folder does
 
-```bash
-npm run dev        # Knowledge Hub only
-```
+| Folder | Tech | Purpose |
+|--------|------|---------|
+| **frontend** | Next.js 16, React, Tailwind | Login, LMS pages, admin, quizzes, email UI |
+| **backend** | Python FastAPI + Prisma/PostgreSQL | AI/RAG service + database schema & migrations |
+| **config** | Docker, env template | Shared configuration files |
 
-## Environment
+## Deploy (free)
 
-All configuration lives in **one file**: `.env` at the repository root.
+| Part | Host | Folder |
+|------|------|--------|
+| Web app | Vercel | `frontend` |
+| Database migrations | Supabase | `backend/prisma` |
+| AI service | Render | `backend` |
 
-| Section | Used by |
-|---------|---------|
-| `DATABASE_URL`, `DIRECT_URL`, Supabase keys | Knowledge Hub (Prisma) + RAG (SQLAlchemy) |
-| `JWT_SECRET` | Knowledge Hub auth + RAG JWT validation |
-| `RAG_SERVICE_URL` | Knowledge Hub → RAG proxy |
-| `OLLAMA_*`, `GROQ_*`, `PINECONE_*` | RAG service |
+Set `NEXT_PUBLIC_APP_URL` and `RAG_SERVICE_URL` in production `.env`.
 
-## Docker
+## Test logins
 
-```bash
-docker compose up rag redis
-docker compose --profile ollama up   # include Ollama
-```
-
-## Legacy
-
-The standalone `kharesiya-rag/` folder has been merged into `services/rag/`. Do not use it.
+- Admin: `admin@kharesiya.com` / `Admin@123456`
+- Employee: `employee@kharesiya.com` / `Employee@123456`

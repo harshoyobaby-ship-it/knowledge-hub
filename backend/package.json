@@ -1,0 +1,26 @@
+{
+  "name": "kharesiya-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend — FastAPI RAG service + Prisma database",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "NODE_PATH=../frontend/node_modules PATH=\"${PWD}/../frontend/.tools/node-v22.14.0-darwin-arm64/bin:$PATH\" tsx --env-file=../.env prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/pg": "^8.20.0",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "pg": "^8.22.0",
+    "prisma": "^7.8.0",
+    "tsx": "^4.22.4",
+    "typescript": "^5"
+  }
+}

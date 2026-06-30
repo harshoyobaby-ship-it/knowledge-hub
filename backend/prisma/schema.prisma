@@ -1,0 +1,737 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../frontend/node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  HR
+  MANAGER
+  DEPARTMENT_HEAD
+  TRAINER
+  EMPLOYEE
+  STUDENT
+  GUEST
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum DepartmentStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  SINGLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+enum NotificationType {
+  LEARNING_ASSIGNMENT
+  NEW_SOP
+  UPDATED_SOP
+  QUIZ_DUE
+  LEARNING_DEADLINE
+  LEARNING_REMINDER
+  ANNOUNCEMENT
+}
+
+enum EmailType {
+  WEEKLY_TRAINING_REMINDER
+  PASSWORD_RESET
+  WELCOME
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum SOPApprovalStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+enum ProgressType {
+  CHAPTER
+  SOP
+  QUIZ
+  LEARNING_PATH
+  COURSE
+  LESSON
+}
+
+enum LessonContentType {
+  TEXT
+  VIDEO
+  PDF
+  DOCUMENT
+  PPT
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  PUBLISH
+  ARCHIVE
+  APPROVE
+  REJECT
+}
+
+enum ChatMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum RagDocumentStatus {
+  PENDING
+  PROCESSING
+  INDEXED
+  FAILED
+}
+
+enum RagSourceType {
+  UPLOAD
+  CHAPTER
+  SOP
+  COURSE
+}
+
+enum RagIngestionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id             String     @id @default(cuid())
+  email          String     @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  avatar         String?
+  role           UserRole   @default(EMPLOYEE)
+  status         UserStatus @default(ACTIVE)
+  departmentId   String?
+  department     Department? @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  headedDepartment Department? @relation("DepartmentHead")
+  jobTitle       String?
+  phone          String?
+  lastLoginAt    DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  createdChapters    KnowledgeChapter[] @relation("ChapterAuthor")
+  createdSOPs        SOP[]              @relation("SOPOwner")
+  createdQuizzes     Quiz[]             @relation("QuizAuthor")
+  quizAttempts       QuizAttempt[]
+  progress           Progress[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  enrollments        LearningPathEnrollment[]
+  passwordResets     PasswordResetToken[]
+  chapterVersions    ChapterVersion[]   @relation("VersionAuthor")
+  sopVersions        SOPVersion[]       @relation("SOPVersionAuthor")
+  reviewedAttempts   QuizAttempt[]      @relation("QuizReviewer")
+  createdCourses     Course[]           @relation("CourseAuthor")
+  courseEnrollments  CourseEnrollment[]
+  lessonProgress     LessonProgress[]
+  chatConversations  ChatConversation[]
+  ragDocuments       RagDocument[]      @relation("RagDocumentUploader")
+  certificates       Certificate[]
+  emailLogs          EmailLog[]
+
+  @@index([departmentId])
+  @@index([role])
+  @@index([email])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Department {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  logo        String?
+  status      DepartmentStatus @default(ACTIVE)
+  headId      String?          @unique
+  head        User?            @relation("DepartmentHead", fields: [headId], references: [id])
+  members     User[]           @relation("DepartmentMembers")
+  chapters    KnowledgeChapter[]
+  sops        SOP[]
+  quizzes     Quiz[]
+  learningPaths LearningPath[]
+  courses       Course[]
+  chatConversations ChatConversation[]
+  ragDocuments      RagDocument[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([status])
+}
+
+model Tag {
+  id       String   @id @default(cuid())
+  name     String   @unique
+  slug     String   @unique
+  chapters ChapterTag[]
+
+  @@index([slug])
+}
+
+model ChapterTag {
+  chapterId String
+  tagId     String
+  chapter   KnowledgeChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  tag       Tag              @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([chapterId, tagId])
+}
+
+model KnowledgeChapter {
+  id              String          @id @default(cuid())
+  title           String
+  description     String?
+  departmentId    String
+  department      Department      @relation(fields: [departmentId], references: [id])
+  category        String?
+  difficulty      DifficultyLevel @default(BEGINNER)
+  estimatedMinutes Int            @default(30)
+  content         String          @db.Text
+  founderNotes    String?         @db.Text
+  references      String[]        @default([])
+  version         Int             @default(1)
+  status          ContentStatus   @default(DRAFT)
+  authorId        String
+  author          User            @relation("ChapterAuthor", fields: [authorId], references: [id])
+  tags            ChapterTag[]
+  attachments     Attachment[]
+  versions        ChapterVersion[]
+  pathItems       LearningPathItem[]
+  progress        Progress[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  publishedAt     DateTime?
+
+  @@index([departmentId])
+  @@index([status])
+  @@index([title])
+}
+
+model ChapterVersion {
+  id              String          @id @default(cuid())
+  chapterId       String
+  chapter         KnowledgeChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  version         Int
+  title           String
+  content         String          @db.Text
+  changeNotes     String?
+  authorId        String
+  author          User            @relation("VersionAuthor", fields: [authorId], references: [id])
+  createdAt       DateTime        @default(now())
+
+  @@unique([chapterId, version])
+  @@index([chapterId])
+}
+
+model Attachment {
+  id          String   @id @default(cuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  url         String
+  chapterId   String?
+  chapter     KnowledgeChapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  sopId       String?
+  sop         SOP?     @relation(fields: [sopId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([chapterId])
+  @@index([sopId])
+}
+
+model LearningPath {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  durationDays    Int      @default(7)
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  passingScore    Float    @default(70)
+  autoEnroll      Boolean  @default(false)
+  status          ContentStatus @default(DRAFT)
+  items           LearningPathItem[]
+  enrollments     LearningPathEnrollment[]
+  progress        Progress[]
+  certificates    Certificate[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([departmentId])
+  @@index([status])
+}
+
+model LearningPathItem {
+  id              String   @id @default(cuid())
+  learningPathId  String
+  learningPath    LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+  chapterId       String?
+  chapter         KnowledgeChapter? @relation(fields: [chapterId], references: [id])
+  courseId        String?
+  course          Course?          @relation(fields: [courseId], references: [id])
+  quizId          String?
+  quiz            Quiz?    @relation(fields: [quizId], references: [id])
+  order           Int
+  isRequired      Boolean  @default(true)
+  dueDays         Int?
+
+  @@index([learningPathId])
+  @@unique([learningPathId, order])
+}
+
+model LearningPathEnrollment {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  learningPathId  String
+  learningPath    LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+  progress        Float    @default(0)
+
+  @@unique([userId, learningPathId])
+  @@index([userId])
+}
+
+model SOP {
+  id              String            @id @default(cuid())
+  title           String
+  departmentId    String
+  department      Department        @relation(fields: [departmentId], references: [id])
+  version         Int               @default(1)
+  ownerId         String
+  owner           User              @relation("SOPOwner", fields: [ownerId], references: [id])
+  effectiveDate   DateTime
+  reviewDate      DateTime?
+  fileUrl         String?
+  fileName        String?
+  status          ContentStatus     @default(DRAFT)
+  approvalStatus  SOPApprovalStatus @default(DRAFT)
+  attachments     Attachment[]
+  versions        SOPVersion[]
+  progress        Progress[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([departmentId])
+  @@index([title])
+  @@index([status])
+}
+
+model SOPVersion {
+  id          String   @id @default(cuid())
+  sopId       String
+  sop         SOP      @relation(fields: [sopId], references: [id], onDelete: Cascade)
+  version     Int
+  fileUrl     String?
+  fileName    String?
+  changeNotes String?
+  authorId    String
+  author      User     @relation("SOPVersionAuthor", fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@unique([sopId, version])
+  @@index([sopId])
+}
+
+model Quiz {
+  id                String   @id @default(cuid())
+  title             String
+  description       String?
+  departmentId      String?
+  department        Department? @relation(fields: [departmentId], references: [id])
+  passingPercentage Float    @default(70)
+  maxAttempts       Int      @default(3)
+  timeLimitMinutes  Int?
+  certificateEligible Boolean @default(false)
+  status            ContentStatus @default(DRAFT)
+  authorId          String
+  author            User     @relation("QuizAuthor", fields: [authorId], references: [id])
+  questions         Question[]
+  attempts          QuizAttempt[]
+  pathItems         LearningPathItem[]
+  progress          Progress[]
+  certificates      Certificate[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([departmentId])
+  @@index([status])
+}
+
+model Question {
+  id          String       @id @default(cuid())
+  quizId      String
+  quiz        Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  type        QuestionType
+  text        String       @db.Text
+  options     Json?
+  correctAnswer Json
+  points      Int          @default(1)
+  order       Int
+  explanation String?
+
+  @@index([quizId])
+}
+
+model QuizAttempt {
+  id          String   @id @default(cuid())
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  answers     Json
+  score       Float?
+  passed      Boolean?
+  needsReview Boolean  @default(false)
+  reviewedById String?
+  reviewedBy  User?    @relation("QuizReviewer", fields: [reviewedById], references: [id])
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  timeSpentSeconds Int?
+
+  @@index([quizId])
+  @@index([userId])
+}
+
+model Progress {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        ProgressType
+  chapterId   String?
+  chapter     KnowledgeChapter? @relation(fields: [chapterId], references: [id])
+  sopId       String?
+  sop         SOP?         @relation(fields: [sopId], references: [id])
+  quizId      String?
+  quiz        Quiz?        @relation(fields: [quizId], references: [id])
+  learningPathId String?
+  learningPath LearningPath? @relation(fields: [learningPathId], references: [id])
+  courseId      String?
+  course        Course?       @relation(fields: [courseId], references: [id])
+  lessonId      String?
+  lesson        Lesson?       @relation(fields: [lessonId], references: [id])
+  completed   Boolean      @default(false)
+  score       Float?
+  timeSpentMinutes Int     @default(0)
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([type])
+}
+
+model Course {
+  id              String          @id @default(cuid())
+  title           String
+  description     String?         @db.Text
+  thumbnail       String?
+  departmentId    String?
+  department      Department?     @relation(fields: [departmentId], references: [id])
+  difficulty      DifficultyLevel @default(BEGINNER)
+  estimatedHours  Float           @default(1)
+  status          ContentStatus   @default(DRAFT)
+  isSelfPaced     Boolean         @default(true)
+  authorId        String
+  author          User            @relation("CourseAuthor", fields: [authorId], references: [id])
+  modules         CourseModule[]
+  enrollments     CourseEnrollment[]
+  pathItems       LearningPathItem[]
+  progress        Progress[]
+  certificates    Certificate[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  publishedAt     DateTime?
+
+  @@index([departmentId])
+  @@index([status])
+  @@index([title])
+}
+
+model CourseModule {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  order       Int
+  lessons     Lesson[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([courseId, order])
+  @@index([courseId])
+}
+
+model Lesson {
+  id              String            @id @default(cuid())
+  moduleId        String
+  module          CourseModule      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  content         String?           @db.Text
+  contentType     LessonContentType @default(TEXT)
+  durationMinutes Int               @default(10)
+  order           Int
+  resources       LessonResource[]
+  progress        LessonProgress[]
+  courseProgress  Progress[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([moduleId, order])
+  @@index([moduleId])
+}
+
+model LessonResource {
+  id           String            @id @default(cuid())
+  lessonId     String
+  lesson       Lesson            @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  resourceType LessonContentType
+  createdAt    DateTime          @default(now())
+
+  @@index([lessonId])
+}
+
+model CourseEnrollment {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  progress    Float     @default(0)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model LessonProgress {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId         String
+  lesson           Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completed        Boolean   @default(false)
+  completedAt      DateTime?
+  timeSpentMinutes Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String?
+  user       User?       @relation(fields: [userId], references: [id])
+  action     AuditAction
+  entityType String
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime    @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model SearchHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  query     String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ChatConversation {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String?
+  departmentId String?
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  messages     ChatMessage[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([userId])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           ChatMessageRole
+  content        String           @db.Text
+  sources        Json?
+  createdAt      DateTime         @default(now())
+
+  @@index([conversationId])
+  @@map("chat_messages")
+}
+
+model RagDocument {
+  id                String            @id @default(cuid())
+  title             String
+  filename          String
+  storageKey        String
+  contentType       String
+  fileSize          Int
+  departmentId      String?
+  department        Department?       @relation(fields: [departmentId], references: [id])
+  uploadedById      String?
+  uploadedBy        User?             @relation("RagDocumentUploader", fields: [uploadedById], references: [id])
+  status            RagDocumentStatus @default(PENDING)
+  chunkCount        Int               @default(0)
+  errorMessage      String?           @db.Text
+  sourceType        RagSourceType     @default(UPLOAD)
+  sourceId          String?
+  pineconeNamespace String?
+  version           Int               @default(1)
+  ingestionJobs     RagIngestionJob[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([departmentId])
+  @@index([status])
+  @@index([uploadedById])
+  @@map("rag_documents")
+}
+
+model RagIngestionJob {
+  id           String             @id @default(cuid())
+  documentId   String
+  document     RagDocument        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  status       RagIngestionStatus @default(PENDING)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  errorMessage String?            @db.Text
+  createdAt    DateTime           @default(now())
+
+  @@index([documentId])
+  @@map("rag_ingestion_jobs")
+}
+
+model Certificate {
+  id                   String        @id @default(cuid())
+  certificateNo        String        @unique
+  userId               String
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                String
+  courseId             String?
+  course               Course?       @relation(fields: [courseId], references: [id])
+  quizId               String?
+  quiz                 Quiz?         @relation(fields: [quizId], references: [id])
+  learningPathId       String?
+  learningPath         LearningPath? @relation(fields: [learningPathId], references: [id])
+  issuedAt             DateTime      @default(now())
+  expiresAt            DateTime?
+  pdfUrl               String?
+  qrVerificationCode   String?       @unique
+  metadata             Json?
+  createdAt            DateTime      @default(now())
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([quizId])
+  @@index([learningPathId])
+}
+
+model EmailLog {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      EmailType
+  toEmail   String
+  subject   String
+  status    EmailStatus @default(PENDING)
+  error     String?     @db.Text
+  metadata  Json?
+  sentAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  @@index([userId, type, createdAt])
+  @@index([type, createdAt])
+}

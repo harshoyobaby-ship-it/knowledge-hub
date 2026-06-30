@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
-knowledge-hub/node_modules/
+frontend/node_modules/
+backend/node_modules/
 
 # Environment (keep .env.example tracked via negation if needed)
 .env
@@ -8,15 +9,19 @@ knowledge-hub/node_modules/
 .env.*.local
 
 # Next.js
-knowledge-hub/.next/
-knowledge-hub/out/
-knowledge-hub/build/
+frontend/.next/
+frontend/out/
+frontend/build/
 
 # RAG service
-services/rag/.venv/
-services/rag/data/
-services/rag/logs/
-services/rag/__pycache__/
+backend/.venv/
+backend/data/
+backend/logs/
+backend/__pycache__/
+backend/backend/
+
+# Local databases
+*.db
 
 # Python
 __pycache__/
@@ -36,15 +41,19 @@ yarn-error.log*
 .vercel
 
 # Uploads
-knowledge-hub/public/uploads/*
-!knowledge-hub/public/uploads/.gitkeep
+frontend/public/uploads/*
+!frontend/public/uploads/.gitkeep
 
 # TypeScript
 *.tsbuildinfo
-knowledge-hub/next-env.d.ts
+frontend/next-env.d.ts
 
 # Tools
-knowledge-hub/.tools/
+frontend/.tools/
 
 # Secrets / local keys
 pinecone.txt
+
+# Legacy / leftover folders (do not use)
+kharesiya-rag/
+knowledge-hub/
