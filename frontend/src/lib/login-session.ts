@@ -6,6 +6,7 @@ import {
   getUserAssignedDepartments,
   requiresDepartmentAssignment,
 } from "@/lib/department-access";
+import { homePathForRole } from "@/lib/founder";
 import { prisma } from "@/lib/prisma";
 
 type LoginUser = {
@@ -18,12 +19,6 @@ type LoginUser = {
   departmentId: string | null;
   department: { id: string; name: string } | null;
 };
-
-export function homePathForRole(role: UserRole): string {
-  if (role === UserRole.HR) return "/hr";
-  if (role === UserRole.MANAGER || role === UserRole.DEPARTMENT_HEAD) return "/manager";
-  return "/dashboard";
-}
 
 export async function establishLoginSession(params: {
   user: LoginUser;

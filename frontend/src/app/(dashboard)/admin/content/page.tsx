@@ -126,6 +126,9 @@ export default function ContentManagementPage() {
   const [questionsQuiz, setQuestionsQuiz] = useState<QuizRecord | null>(null);
   const [questionsDialog, setQuestionsDialog] = useState(false);
 
+  const isFounder =
+    user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.ADMIN;
+
   const lockedDept =
     user?.role === UserRole.DEPARTMENT_HEAD ? user.departmentId : null;
 
@@ -186,7 +189,14 @@ export default function ContentManagementPage() {
       if (!res.ok) throw new Error(json.error);
       return json.data;
     },
-    onSuccess: () => { invalidateAll(); toast.success("Chapter created"); },
+    onSuccess: (data) => {
+      invalidateAll();
+      if (data?.bulk) {
+        toast.success(`Published to ${data.count} departments`);
+      } else {
+        toast.success("Chapter created");
+      }
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -327,7 +337,13 @@ export default function ContentManagementPage() {
   };
 
   const createLabel =
-    tab === "chapters" ? "New Chapter" : tab === "sops" ? "New SOP" : "New Quiz";
+    tab === "chapters"
+      ? isFounder
+        ? "Publish Knowledge"
+        : "New Chapter"
+      : tab === "sops"
+        ? "New SOP"
+        : "New Quiz";
 
   const isLoading =
     (tab === "chapters" && chaptersLoading) ||
@@ -337,8 +353,12 @@ export default function ContentManagementPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Content Management"
-        description="Create, edit, publish, and archive learning content"
+        title={isFounder ? "Founder Knowledge Library" : "Content Management"}
+        description={
+          isFounder
+            ? "Publish guidance, SOPs, and training to every department"
+            : "Create, edit, publish, and archive learning content"
+        }
         actions={
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4" />
@@ -441,12 +461,16 @@ export default function ContentManagementPage() {
         chapter={editingChapter}
         departments={departments}
         lockedDepartmentId={lockedDept}
+        allowPublishToAll={isFounder}
         onSubmit={async (data) => {
           if (editingChapter) {
             await updateChapter.mutateAsync({ id: editingChapter.id, payload: data });
             return { id: editingChapter.id };
           }
           const created = await createChapter.mutateAsync(data);
+          if (created?.bulk) {
+            return { id: created.chapters?.[0]?.id as string };
+          }
           return { id: created.id as string };
         }}
       />

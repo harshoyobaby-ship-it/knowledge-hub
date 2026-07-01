@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "npm run dev:web",
-    "dev:web": "PATH=\"${PWD}/frontend/.tools/node-v22.14.0-darwin-arm64/bin:$PATH\" npm run dev --prefix frontend",
+    "dev:web": "PATH=\"${PWD}/frontend/.tools/node-v22.14.0-darwin-arm64/bin:$PATH\" npm run db:generate && PATH=\"${PWD}/frontend/.tools/node-v22.14.0-darwin-arm64/bin:$PATH\" npm run dev --prefix frontend",
     "dev:rag": "cd backend && bash scripts/dev.sh",
     "stop": "lsof -tiTCP:3000 -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null; lsof -tiTCP:3001 -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null; lsof -tiTCP:8000 -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null; echo 'Stopped services on ports 3000, 3001, 8000'",
     "build": "PATH=\"${PWD}/frontend/.tools/node-v22.14.0-darwin-arm64/bin:$PATH\" npm run db:generate && npm run build --prefix frontend",

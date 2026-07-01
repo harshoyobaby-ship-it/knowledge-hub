@@ -88,6 +88,7 @@ export async function POST(request: Request) {
 
     return apiSuccess({
       requiresDepartment: false,
+      redirectTo: result.redirectTo,
       user: {
         id: user.id,
         email: user.email,

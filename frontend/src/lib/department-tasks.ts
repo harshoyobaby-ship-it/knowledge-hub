@@ -82,7 +82,7 @@ export async function notifyDepartmentOfTask(
   await prisma.notification.createMany({
     data: members.map((m) => ({
       userId: m.id,
-      type: "TASK_ASSIGNED" as const,
+      type: "ANNOUNCEMENT" as const,
       title,
       message,
       link,

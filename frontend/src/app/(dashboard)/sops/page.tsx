@@ -42,7 +42,7 @@ export default function SOPsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="SOP Library" description="Standard operating procedures with version control" />
+      <PageHeader title="SOP Library" description="Founder-published procedures — search, read, and download for your department" />
 
       <Input
         placeholder="Search SOPs..."

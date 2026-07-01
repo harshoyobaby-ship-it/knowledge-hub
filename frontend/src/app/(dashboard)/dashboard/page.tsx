@@ -6,7 +6,9 @@ import {
   Clock,
   Target,
   Sparkles,
+  Crown,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
   Bar,
@@ -30,9 +32,21 @@ import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+async function fetchFounderMessages() {
+  const res = await fetch("/api/founder/messages", { credentials: "include" });
+  const json = await res.json();
+  if (!res.ok) return [];
+  return json.data ?? [];
+}
+
 export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const { data: insights, isLoading: insightsLoading } = useInsights();
+  const { data: founderMessages = [] } = useQuery({
+    queryKey: ["founder-messages"],
+    queryFn: fetchFounderMessages,
+    enabled: !!user,
+  });
 
   if (authLoading || insightsLoading) {
     return <LoadingSkeleton />;
@@ -47,6 +61,32 @@ export default function DashboardPage() {
         title={`Welcome back, ${user?.firstName ?? "there"}!`}
         description={`${user?.department?.name ?? "Your"} department · ${user?.jobTitle ?? "Team member"}`}
       />
+
+      {founderMessages.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Crown className="h-4 w-4 text-amber-600" />
+              Message from Founder
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {founderMessages.slice(0, 2).map((msg: {
+              id: string;
+              title: string;
+              founderNotes: string;
+            }) => (
+              <div key={msg.id} className="rounded-lg border bg-background p-3">
+                <p className="font-medium">{msg.title}</p>
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{msg.founderNotes}</p>
+                <Button asChild variant="link" size="sm" className="mt-1 h-auto p-0">
+                  <Link href={`/learning-modules/${msg.id}`}>Read full guidance →</Link>
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {isNewUser && data.totalModules > 0 && (
         <Card className="border-primary/30 bg-primary/5">

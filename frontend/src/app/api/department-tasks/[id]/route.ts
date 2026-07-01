@@ -28,6 +28,16 @@ const taskSelect = {
   department: { select: { id: true, name: true } },
   assignedBy: { select: { id: true, firstName: true, lastName: true } },
   completedBy: { select: { id: true, firstName: true, lastName: true } },
+  attachments: {
+    select: {
+      id: true,
+      originalName: true,
+      mimeType: true,
+      size: true,
+      url: true,
+    },
+  },
+  sop: { select: { id: true, title: true } },
   updates: {
     orderBy: { createdAt: "desc" as const },
     select: {

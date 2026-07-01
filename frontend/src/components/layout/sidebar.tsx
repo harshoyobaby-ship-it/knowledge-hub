@@ -23,11 +23,23 @@ import {
   Bot,
   Presentation,
   BarChart3,
+  Crown,
   ListTodo,
   Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@prisma/client";
+
+const founderPanelItems = [
+  { href: "/founder", label: "Founder Hub", icon: Crown },
+  { href: "/admin/content", label: "Publish Knowledge", icon: FolderOpen },
+  { href: "/admin/tasks", label: "Assign Tasks", icon: ListTodo },
+  { href: "/admin/courses", label: "Courses", icon: GraduationCap },
+  { href: "/admin/learning-paths", label: "Learning Paths", icon: Route },
+  { href: "/departments", label: "Departments", icon: Building2 },
+  { href: "/admin/users", label: "Team Members", icon: UserCog },
+  { href: "/profile", label: "Profile", icon: User },
+];
 
 const managerPanelItems = [
   { href: "/manager", label: "Manager Dashboard", icon: LayoutDashboard },
@@ -97,6 +109,10 @@ interface SidebarProps {
   userRole?: UserRole;
 }
 
+function isFounderRole(role?: UserRole): boolean {
+  return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
+}
+
 function isManagerRole(role?: UserRole): boolean {
   return role === UserRole.MANAGER || role === UserRole.DEPARTMENT_HEAD;
 }
@@ -104,14 +120,17 @@ function isManagerRole(role?: UserRole): boolean {
 export function Sidebar({ collapsed, onToggle, userRole }: SidebarProps) {
   const pathname = usePathname();
   const isHrPanel = userRole === UserRole.HR;
+  const isFounderPanel = isFounderRole(userRole);
   const isManagerPanel = isManagerRole(userRole);
   const primaryNav = isHrPanel
     ? hrPanelItems
-    : isManagerPanel
-      ? managerPanelItems
-      : learnerItems;
+    : isFounderPanel
+      ? founderPanelItems
+      : isManagerPanel
+        ? managerPanelItems
+        : learnerItems;
   const visiblePanels =
-    isHrPanel || isManagerPanel
+    isHrPanel || isManagerPanel || isFounderPanel
       ? []
       : panelItems.filter((item) => roleMatches(userRole, item.roles));
 
@@ -128,13 +147,17 @@ export function Sidebar({ collapsed, onToggle, userRole }: SidebarProps) {
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
             isHrPanel
               ? "bg-emerald-600"
-              : isManagerPanel
-                ? "bg-blue-600"
-                : "bg-sidebar-accent"
+              : isFounderPanel
+                ? "bg-amber-600"
+                : isManagerPanel
+                  ? "bg-blue-600"
+                  : "bg-sidebar-accent"
           )}
         >
           {isHrPanel ? (
             <Users className="h-5 w-5 text-white" />
+          ) : isFounderPanel ? (
+            <Crown className="h-5 w-5 text-white" />
           ) : isManagerPanel ? (
             <BarChart3 className="h-5 w-5 text-white" />
           ) : (
@@ -144,14 +167,16 @@ export function Sidebar({ collapsed, onToggle, userRole }: SidebarProps) {
         {!collapsed && (
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">
-              {isHrPanel ? "HR Panel" : isManagerPanel ? "Manager Panel" : "Kharesiya"}
+              {isHrPanel ? "HR Panel" : isFounderPanel ? "Founder Hub" : isManagerPanel ? "Manager Panel" : "Kharesiya"}
             </p>
             <p className="truncate text-xs text-sidebar-foreground/60">
               {isHrPanel
                 ? "Employee training oversight"
-                : isManagerPanel
-                  ? "Department management"
-                  : "Enterprise LMS"}
+                : isFounderPanel
+                  ? "Knowledge for every department"
+                  : isManagerPanel
+                    ? "Department management"
+                    : "Enterprise LMS"}
             </p>
           </div>
         )}
@@ -166,9 +191,9 @@ export function Sidebar({ collapsed, onToggle, userRole }: SidebarProps) {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {!collapsed && (isHrPanel || isManagerPanel) && (
+        {!collapsed && (isHrPanel || isManagerPanel || isFounderPanel) && (
           <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-            {isHrPanel ? "HR Admin" : "Department Manager"}
+            {isHrPanel ? "HR Admin" : isFounderPanel ? "Founder" : "Department Manager"}
           </p>
         )}
         {primaryNav.map((item) => {

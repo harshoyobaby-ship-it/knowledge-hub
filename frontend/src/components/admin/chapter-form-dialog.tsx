@@ -51,6 +51,7 @@ interface ChapterFormDialogProps {
   chapter?: ChapterRecord | null;
   departments: Department[];
   lockedDepartmentId?: string | null;
+  allowPublishToAll?: boolean;
   onSubmit: (data: Record<string, unknown>) => Promise<{ id: string } | void>;
 }
 
@@ -91,12 +92,14 @@ export function ChapterFormDialog({
   chapter,
   departments,
   lockedDepartmentId,
+  allowPublishToAll = false,
   onSubmit,
 }: ChapterFormDialogProps) {
   const isEdit = !!chapter;
   const schema = isEdit ? updateChapterSchema : chapterSchema;
   const initialAttachmentIds = useRef<string[]>([]);
   const [attachments, setAttachments] = useState<ExistingAttachment[]>([]);
+  const [publishToAll, setPublishToAll] = useState(false);
 
   const {
     register,
@@ -134,7 +137,9 @@ export function ChapterFormDialog({
         content: chapter?.content ?? "<h3>Overview</h3><p>Enter chapter content here...</p>",
         founderNotes: chapter?.founderNotes ?? "",
         status: (chapter?.status as "DRAFT") ?? "DRAFT",
+        publishToAllDepartments: false,
       });
+      setPublishToAll(false);
     }
   }, [open, chapter, lockedDepartmentId, reset]);
 
@@ -142,15 +147,21 @@ export function ChapterFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Chapter" : "New Chapter"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit Chapter" : "Publish Knowledge"}</DialogTitle>
           <DialogDescription>
-            {isEdit ? "Update learning module content" : "Create a new knowledge chapter"}
+            {isEdit
+              ? "Update learning module content"
+              : "Share knowledge with one department or publish to all teams at once"}
           </DialogDescription>
         </DialogHeader>
 
         <form
           onSubmit={handleSubmit(async (data) => {
-            const result = await onSubmit(data);
+            const payload = {
+              ...data,
+              publishToAllDepartments: !isEdit && publishToAll,
+            };
+            const result = await onSubmit(payload);
             const chapterId = result?.id ?? chapter?.id;
             if (chapterId) {
               await syncChapterAttachments(chapterId, attachments, initialAttachmentIds.current);
@@ -168,6 +179,17 @@ export function ChapterFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Department</Label>
+              {allowPublishToAll && !isEdit && (
+                <label className="mb-2 flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={publishToAll}
+                    onChange={(e) => setPublishToAll(e.target.checked)}
+                    className="rounded border-input"
+                  />
+                  Publish to all departments
+                </label>
+              )}
               <Controller
                 name="departmentId"
                 control={control}
@@ -175,9 +197,9 @@ export function ChapterFormDialog({
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
-                    disabled={!!lockedDepartmentId}
+                    disabled={!!lockedDepartmentId || publishToAll}
                   >
-                    <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={publishToAll ? "All departments" : "Select department"} /></SelectTrigger>
                     <SelectContent>
                       {departments.map((d) => (
                         <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
@@ -186,6 +208,9 @@ export function ChapterFormDialog({
                   </Select>
                 )}
               />
+              {errors.departmentId && (
+                <p className="text-xs text-destructive">{errors.departmentId.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Status</Label>
@@ -248,14 +273,19 @@ export function ChapterFormDialog({
           <FileUploadField files={attachments} onFilesChange={setAttachments} />
 
           <div className="space-y-2">
-            <Label htmlFor="founderNotes">Founder Notes</Label>
-            <Textarea id="founderNotes" rows={2} {...register("founderNotes")} />
+            <Label htmlFor="founderNotes">Message from Founder (shown to department)</Label>
+            <Textarea
+              id="founderNotes"
+              rows={3}
+              placeholder="Personal guidance or expectations for this department..."
+              {...register("founderNotes")}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : isEdit ? "Save Changes" : "Create Chapter"}
+              {isSubmitting ? "Saving..." : isEdit ? "Save Changes" : publishToAll ? "Publish to all departments" : "Publish knowledge"}
             </Button>
           </div>
         </form>

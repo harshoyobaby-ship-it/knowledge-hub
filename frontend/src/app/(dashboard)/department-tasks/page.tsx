@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { ListTodo, Building2, Calendar, ArrowRight } from "lucide-react";
+import { ListTodo, Building2, Calendar, ArrowRight, Paperclip } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -93,6 +93,7 @@ export default function DepartmentTasksPage() {
             dueDate?: string;
             assignedBy: { firstName: string; lastName: string };
             _count: { updates: number };
+            attachments?: { id: string }[];
           }) => (
             <Card key={task.id}>
               <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
@@ -114,6 +115,12 @@ export default function DepartmentTasksPage() {
                       </span>
                     )}
                     <span>{task._count.updates} follow-up updates</span>
+                    {(task.attachments?.length ?? 0) > 0 && (
+                      <span className="inline-flex items-center gap-1">
+                        <Paperclip className="h-3.5 w-3.5" />
+                        {task.attachments!.length} attachment{task.attachments!.length === 1 ? "" : "s"}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <Button asChild>

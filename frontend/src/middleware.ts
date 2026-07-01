@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import { UserRole } from "@prisma/client";
 import { expandRoleEquivalents, hasAnyPermissionForRole } from "@/lib/rbac";
+import { homePathForRole } from "@/lib/founder";
 import {
   isPublicPath,
   isAuthenticatedPath,
@@ -22,12 +23,6 @@ async function getUserFromToken(token: string): Promise<{ role: UserRole } | nul
   } catch {
     return null;
   }
-}
-
-function homePathForRole(role: UserRole): string {
-  if (role === UserRole.HR) return "/hr";
-  if (role === UserRole.MANAGER || role === UserRole.DEPARTMENT_HEAD) return "/manager";
-  return "/dashboard";
 }
 
 function forbiddenRedirect(request: NextRequest, role?: UserRole) {

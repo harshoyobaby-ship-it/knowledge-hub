@@ -15,6 +15,10 @@ import {
   notifyDepartmentOfTask,
 } from "@/lib/department-tasks";
 import { departmentTaskSchema } from "@/lib/validations";
+import {
+  createFounderSopFromTask,
+  notifyDepartmentOfNewSop,
+} from "@/lib/founder-sop";
 
 const taskSelect = {
   id: true,
@@ -29,6 +33,17 @@ const taskSelect = {
   department: { select: { id: true, name: true } },
   assignedBy: { select: { id: true, firstName: true, lastName: true } },
   completedBy: { select: { id: true, firstName: true, lastName: true } },
+  attachments: {
+    select: {
+      id: true,
+      filename: true,
+      originalName: true,
+      mimeType: true,
+      size: true,
+      url: true,
+    },
+  },
+  sop: { select: { id: true, title: true } },
   _count: { select: { updates: true } },
 } as const;
 
@@ -110,6 +125,40 @@ export async function POST(request: Request) {
           },
         },
       },
+      select: { id: true, title: true },
+    });
+
+    if (data.attachments?.length) {
+      await prisma.attachment.createMany({
+        data: data.attachments.map((file) => ({
+          taskId: task.id,
+          filename: file.filename,
+          originalName: file.originalName,
+          mimeType: file.mimeType,
+          size: file.size,
+          url: file.url,
+        })),
+      });
+
+      try {
+        const sop = await createFounderSopFromTask({
+          taskId: task.id,
+          title: data.title,
+          description: data.description,
+          departmentId: data.departmentId,
+          ownerId: auth.userId,
+          attachments: data.attachments,
+        });
+        if (sop) {
+          await notifyDepartmentOfNewSop(data.departmentId, sop.title, sop.id);
+        }
+      } catch (sopError) {
+        console.error("Founder SOP creation failed (task still assigned):", sopError);
+      }
+    }
+
+    const created = await prisma.departmentTask.findUnique({
+      where: { id: task.id },
       select: taskSelect,
     });
 
@@ -128,7 +177,7 @@ export async function POST(request: Request) {
       details: { title: task.title, departmentId: data.departmentId },
     });
 
-    return apiSuccess(task, 201);
+    return apiSuccess(created, 201);
   } catch (error) {
     return handleApiError(error);
   }

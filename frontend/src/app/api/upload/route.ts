@@ -20,8 +20,8 @@ const ALLOWED_TYPES: Record<string, LessonContentType> = {
   "application/vnd.openxmlformats-officedocument.presentationml.presentation": "PPT",
   "application/msword": "DOCUMENT",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "DOCUMENT",
-  "application/vnd.ms-excel": "DOCUMENT",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "DOCUMENT",
+  "application/vnd.ms-excel": "DOCUMENT",
   "text/plain": "DOCUMENT",
   "text/csv": "DOCUMENT",
 };
@@ -32,7 +32,9 @@ export async function POST(request: Request) {
     if (auth instanceof Response) return auth;
 
     const canUpload =
-      hasPermission(auth, "MANAGE_COURSES") || hasPermission(auth, "MANAGE_CONTENT");
+      hasPermission(auth, "MANAGE_COURSES") ||
+      hasPermission(auth, "MANAGE_CONTENT") ||
+      hasPermission(auth, "ASSIGN_FOUNDER_TASKS");
     if (!canUpload) return apiError("Forbidden", 403);
 
     const formData = await request.formData();

@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { loginSchema, type LoginInput } from "@/lib/validations";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { homePathForRole } from "@/lib/founder";
+import { UserRole } from "@prisma/client";
 
 const LOGIN_ERRORS: Record<string, string> = {
   google_denied: "Google sign-in was cancelled.",
@@ -84,13 +86,9 @@ function LoginForm() {
         ? `Welcome! Signed in to ${json.data.user.department.name}`
         : "Welcome back!"
     );
-    const role = json.data?.user?.role;
-    const destination =
-      role === "HR"
-        ? "/hr"
-        : role === "MANAGER" || role === "DEPARTMENT_HEAD"
-          ? "/manager"
-          : redirect;
+    const role = json.data?.user?.role as UserRole | undefined;
+    const destination = json.data?.redirectTo
+      ?? (role ? homePathForRole(role) : redirect);
     router.push(destination);
     router.refresh();
   }

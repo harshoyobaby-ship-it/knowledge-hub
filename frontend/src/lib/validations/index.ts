@@ -140,10 +140,10 @@ export const departmentSchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
 });
 
-export const chapterSchema = z.object({
+const chapterFields = z.object({
   title: z.string().min(1).max(200),
   description: z.string().optional().nullable(),
-  departmentId: z.string().min(1),
+  departmentId: z.string().optional().nullable(),
   category: z.string().optional().nullable(),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "EXPERT"]).optional(),
   estimatedMinutes: z.number().int().min(1).optional(),
@@ -152,9 +152,18 @@ export const chapterSchema = z.object({
   references: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).optional(),
+  publishToAllDepartments: z.boolean().optional(),
 });
 
-export const updateChapterSchema = chapterSchema.partial().extend({
+export const chapterSchema = chapterFields.refine(
+  (data) => data.publishToAllDepartments || (data.departmentId && data.departmentId.length > 0),
+  {
+    message: "Select a department or publish to all departments",
+    path: ["departmentId"],
+  }
+);
+
+export const updateChapterSchema = chapterFields.partial().extend({
   title: z.string().min(1).max(200).optional(),
   content: z.string().min(1).optional(),
 });
@@ -221,12 +230,21 @@ export const questionSchema = z.object({
   explanation: z.string().optional().nullable(),
 });
 
+export const attachmentInputSchema = z.object({
+  filename: z.string().min(1),
+  originalName: z.string().min(1),
+  mimeType: z.string().min(1),
+  size: z.number().int().positive(),
+  url: z.string().min(1),
+});
+
 export const departmentTaskSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().optional().nullable(),
   departmentId: z.string().min(1),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
   dueDate: z.string().datetime().optional().nullable(),
+  attachments: z.array(attachmentInputSchema).optional(),
 });
 
 export const updateDepartmentTaskSchema = z.object({

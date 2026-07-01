@@ -249,11 +249,15 @@ model DepartmentTask {
   completedById String?
   completedBy   User?                  @relation("TaskCompleter", fields: [completedById], references: [id])
   updates       DepartmentTaskUpdate[]
+  attachments   Attachment[]
+  sopId         String?
+  sop           SOP?                   @relation(fields: [sopId], references: [id], onDelete: SetNull)
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
 
   @@index([departmentId])
   @@index([assignedById])
+  @@index([sopId])
   @@index([status])
   @@index([dueDate])
 }
@@ -347,10 +351,13 @@ model Attachment {
   chapter     KnowledgeChapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   sopId       String?
   sop         SOP?     @relation(fields: [sopId], references: [id], onDelete: Cascade)
+  taskId      String?
+  task        DepartmentTask? @relation(fields: [taskId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
 
   @@index([chapterId])
   @@index([sopId])
+  @@index([taskId])
 }
 
 model LearningPath {
@@ -423,6 +430,7 @@ model SOP {
   attachments     Attachment[]
   versions        SOPVersion[]
   progress        Progress[]
+  founderTasks    DepartmentTask[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 

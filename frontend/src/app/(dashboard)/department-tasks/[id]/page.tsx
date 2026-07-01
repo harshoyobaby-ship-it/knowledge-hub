@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { ArrowLeft, Calendar, User } from "lucide-react";
+import { ArrowLeft, Calendar, User, FileText, Download, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -127,6 +127,46 @@ export default function DepartmentTaskDetailPage() {
               </p>
             </CardContent>
           </Card>
+
+          {task.attachments?.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Attachments</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                {task.attachments.map((file: {
+                  id: string;
+                  originalName: string;
+                  mimeType: string;
+                  size: number;
+                  url: string;
+                }) => (
+                  <a
+                    key={file.id}
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-accent"
+                  >
+                    <FileText className="h-4 w-4 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{file.originalName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(file.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                    <Download className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </a>
+                ))}
+                {task.sop && (
+                  <Button variant="outline" className="mt-2 w-full" asChild>
+                    <Link href={`/sops/${task.sop.id}`}>
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Open in SOP Library — {task.sop.title}
+                    </Link>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader><CardTitle>Follow-up timeline</CardTitle></CardHeader>
