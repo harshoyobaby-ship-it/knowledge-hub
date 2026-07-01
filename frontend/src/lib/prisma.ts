@@ -8,18 +8,29 @@ const globalForPrisma = globalThis as unknown as {
   prismaUrl: string | undefined;
 };
 
+function normalizeDatabaseUrl(url: string): string {
+  return url.trim().replace(/^["']|["']$/g, "");
+}
+
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = normalizeDatabaseUrl(process.env.DATABASE_URL ?? "");
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set");
   }
 
+  const isSupabase =
+    connectionString.includes("supabase.co") ||
+    connectionString.includes("supabase.com");
+  const usesPgBouncer =
+    connectionString.includes("pgbouncer=true") || connectionString.includes(":6543");
+
   const pool = new Pool({
     connectionString,
-    ssl: connectionString.includes("supabase.co") ||
-      connectionString.includes("supabase.com")
-      ? { rejectUnauthorized: false }
-      : undefined,
+    ssl: isSupabase ? { rejectUnauthorized: false } : undefined,
+    max: process.env.VERCEL ? 1 : 10,
+    idleTimeoutMillis: 20000,
+    connectionTimeoutMillis: 15000,
+    ...(usesPgBouncer ? { allowExitOnIdle: true } : {}),
   });
   const adapter = new PrismaPg(pool);
 
@@ -29,7 +40,7 @@ function createPrismaClient() {
   });
 }
 
-const currentUrl = process.env.DATABASE_URL;
+const currentUrl = normalizeDatabaseUrl(process.env.DATABASE_URL ?? "");
 
 if (
   !globalForPrisma.prisma ||
