@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Route,
   Bot,
+  ListTodo,
   Mail,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
@@ -33,6 +34,7 @@ async function fetchAdminStats() {
 }
 
 const quickLinks = [
+  { href: "/admin/tasks", label: "Founder Tasks", description: "Assign tasks to departments", icon: ListTodo },
   { href: "/admin/users", label: "Users", description: "Create, suspend, assign roles", icon: UserCog },
   { href: "/admin/content", label: "Knowledge Base", description: "Chapters, SOPs, quizzes", icon: FolderOpen },
   { href: "/admin/courses", label: "Courses", description: "Modules, lessons, uploads", icon: GraduationCap },

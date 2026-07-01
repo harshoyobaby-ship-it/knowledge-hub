@@ -67,3 +67,17 @@ export const STATUS_LABELS = {
   ACTIVE: "Active",
   INACTIVE: "Inactive",
 };
+
+export const TASK_STATUS_LABELS = {
+  ASSIGNED: "Assigned",
+  IN_PROGRESS: "In Progress",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+export const TASK_PRIORITY_LABELS = {
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  URGENT: "Urgent",
+};

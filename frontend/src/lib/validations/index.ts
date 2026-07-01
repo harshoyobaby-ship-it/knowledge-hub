@@ -221,6 +221,26 @@ export const questionSchema = z.object({
   explanation: z.string().optional().nullable(),
 });
 
+export const departmentTaskSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().optional().nullable(),
+  departmentId: z.string().min(1),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
+  dueDate: z.string().datetime().optional().nullable(),
+});
+
+export const updateDepartmentTaskSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().optional().nullable(),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
+  dueDate: z.string().datetime().optional().nullable(),
+  status: z.enum(["ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]).optional(),
+  note: z.string().optional().nullable(),
+});
+
+export type DepartmentTaskInput = z.infer<typeof departmentTaskSchema>;
+export type UpdateDepartmentTaskInput = z.infer<typeof updateDepartmentTaskSchema>;
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

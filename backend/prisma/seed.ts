@@ -3,6 +3,10 @@ import { PrismaClient, UserRole } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
+import {
+  buildSkuCreativeChecklistHtml,
+  SKU_CREATIVE_CHECKLIST_ATTACHMENT,
+} from "./content/sku-creative-checklist";
 
 const connectionString = process.env.DATABASE_URL!;
 const pool = new Pool({
@@ -130,110 +134,408 @@ async function main() {
     (await prisma.department.findMany()).map((d) => [d.name, d.id])
   );
 
-  const sampleChapters = [
-    {
-      title: "Introduction to Purchase Orders",
-      department: "Purchase",
-      category: "Onboarding",
-      difficulty: "BEGINNER" as const,
-      estimatedMinutes: 20,
-      content:
-        "<h3>Overview</h3><p>Learn how purchase orders flow from request to approval in Kharesiya Brands.</p><h3>Key Steps</h3><ul><li>Create a PO request</li><li>Route for approval</li><li>Issue to vendor</li></ul>",
-      founderNotes: "Consistency in PO handling protects margin and vendor relationships.",
-    },
-    {
-      title: "Vendor Selection Criteria",
-      department: "Purchase",
-      category: "Process",
-      difficulty: "INTERMEDIATE" as const,
-      estimatedMinutes: 35,
-      content:
-        "<h3>Overview</h3><p>Evaluate vendors on quality, cost, reliability, and compliance.</p>",
-      founderNotes: "Never compromise on quality for short-term savings.",
-    },
-    {
-      title: "Stock Receiving Workflow",
-      department: "Inventory",
-      category: "SOP",
-      difficulty: "BEGINNER" as const,
-      estimatedMinutes: 25,
-      content:
-        "<h3>Overview</h3><p>Standard receiving process for inbound inventory across all warehouses.</p>",
-    },
-    {
-      title: "Cycle Count Best Practices",
-      department: "Inventory",
-      category: "Process",
-      difficulty: "ADVANCED" as const,
-      estimatedMinutes: 45,
-      content:
-        "<h3>Overview</h3><p>Accurate cycle counts reduce shrinkage and improve forecast accuracy.</p>",
-    },
-    {
-      title: "Employee Onboarding Checklist",
-      department: "HR",
-      category: "Onboarding",
-      difficulty: "BEGINNER" as const,
-      estimatedMinutes: 15,
-      content:
-        "<h3>Overview</h3><p>HR onboarding steps for every new Kharesiya team member.</p>",
-    },
-    {
-      title: "Warehouse Safety Fundamentals",
-      department: "Operations",
-      category: "Safety",
-      difficulty: "BEGINNER" as const,
-      estimatedMinutes: 30,
-      content:
-        "<h3>Overview</h3><p>Essential safety protocols for warehouse and operations staff.</p>",
-    },
-  ];
+  type Difficulty = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
 
-  for (const ch of sampleChapters) {
-    const departmentId = deptByName[ch.department];
-    if (!departmentId) continue;
-
-    const existing = await prisma.knowledgeChapter.findFirst({
-      where: { title: ch.title, departmentId },
-    });
-
-    if (!existing) {
-      await prisma.knowledgeChapter.create({
-        data: {
-          title: ch.title,
-          departmentId,
-          category: ch.category,
-          difficulty: ch.difficulty,
-          estimatedMinutes: ch.estimatedMinutes,
-          content: ch.content,
-          founderNotes: ch.founderNotes,
-          status: "PUBLISHED",
-          publishedAt: new Date(),
-          authorId: admin.id,
-        },
-      });
+  const departmentContent: Record<
+    string,
+    {
+      chapters: Array<{
+        title: string;
+        category: string;
+        difficulty: Difficulty;
+        estimatedMinutes: number;
+        content: string;
+        founderNotes?: string;
+      }>;
+      sopTitle: string;
+      quizTitle: string;
+      passingPercentage: number;
+      courseTitle: string;
+      courseDescription: string;
+      lessons: Array<{ title: string; content: string; durationMinutes: number }>;
+      pathName: string;
     }
-  }
-  console.log(`✓ ${sampleChapters.length} learning chapters`);
+  > = {
+    Purchase: {
+      chapters: [
+        {
+          title: "Introduction to Purchase Orders",
+          category: "Onboarding",
+          difficulty: "BEGINNER",
+          estimatedMinutes: 20,
+          content:
+            "<h3>Overview</h3><p>Learn how purchase orders flow from request to approval in Kharesiya Brands.</p><ul><li>Create a PO request</li><li>Route for approval</li><li>Issue to vendor</li></ul>",
+          founderNotes: "Consistency in PO handling protects margin and vendor relationships.",
+        },
+        {
+          title: "Vendor Selection Criteria",
+          category: "Process",
+          difficulty: "INTERMEDIATE",
+          estimatedMinutes: 35,
+          content:
+            "<h3>Overview</h3><p>Evaluate vendors on quality, cost, reliability, and compliance before onboarding.</p>",
+        },
+        {
+          title: "SKU Creative Checklist",
+          category: "SOP",
+          difficulty: "INTERMEDIATE",
+          estimatedMinutes: 90,
+          content: buildSkuCreativeChecklistHtml(),
+          founderNotes:
+            "Procurement must verify packaging specs, barcodes, and vendor print proofs against this checklist before approving artwork for production.",
+        },
+      ],
+      sopTitle: "Purchase Order Approval",
+      quizTitle: "Purchase Essentials Quiz",
+      passingPercentage: 75,
+      courseTitle: "Purchase Team Onboarding",
+      courseDescription: "Core procurement workflows for the Purchase department.",
+      lessons: [
+        {
+          title: "PO Lifecycle Overview",
+          content: "<h3>PO Lifecycle</h3><p>From requisition to goods receipt — roles and handoffs in Purchase.</p>",
+          durationMinutes: 15,
+        },
+        {
+          title: "Vendor Communication Standards",
+          content: "<h3>Vendors</h3><p>Professional communication templates and escalation paths.</p>",
+          durationMinutes: 20,
+        },
+        {
+          title: "SKU Creative Checklist Walkthrough",
+          content:
+            "<h3>Packaging Artwork Approval</h3><p>Use the SKU Creative Checklist to verify all 150 checkpoints across product identity, legal metrology, regulatory compliance, barcodes, packaging materials, artwork design, marketplace compliance, and final QA before releasing artwork to print.</p><p>Download the Excel template from the chapter attachments and obtain sign-off from Procurement along with QA, Regulatory, and Brand teams.</p>",
+          durationMinutes: 45,
+        },
+      ],
+      pathName: "Purchase Starter Path",
+    },
+    Inventory: {
+      chapters: [
+        {
+          title: "Stock Receiving Workflow",
+          category: "SOP",
+          difficulty: "BEGINNER",
+          estimatedMinutes: 25,
+          content:
+            "<h3>Overview</h3><p>Standard receiving process for inbound inventory across all warehouses.</p>",
+        },
+        {
+          title: "Cycle Count Best Practices",
+          category: "Process",
+          difficulty: "ADVANCED",
+          estimatedMinutes: 45,
+          content:
+            "<h3>Overview</h3><p>Accurate cycle counts reduce shrinkage and improve forecast accuracy.</p>",
+        },
+      ],
+      sopTitle: "Stock Count Procedure",
+      quizTitle: "Inventory Basics",
+      passingPercentage: 70,
+      courseTitle: "Inventory Management Fundamentals",
+      courseDescription: "Receiving, storage, and cycle counting for Inventory teams.",
+      lessons: [
+        {
+          title: "Warehouse Layout & Bin Locations",
+          content: "<h3>Layout</h3><p>How SKUs are organized and located in Kharesiya warehouses.</p>",
+          durationMinutes: 15,
+        },
+        {
+          title: "Receiving & Put-Away",
+          content: "<h3>Receiving</h3><p>Scanning, QC checks, and put-away rules for inbound stock.</p>",
+          durationMinutes: 25,
+        },
+      ],
+      pathName: "Inventory Starter Path",
+    },
+    HR: {
+      chapters: [
+        {
+          title: "Employee Onboarding Checklist",
+          category: "Onboarding",
+          difficulty: "BEGINNER",
+          estimatedMinutes: 15,
+          content:
+            "<h3>Overview</h3><p>HR onboarding steps for every new Kharesiya team member.</p>",
+        },
+        {
+          title: "Leave & Attendance Policy",
+          category: "Policy",
+          difficulty: "BEGINNER",
+          estimatedMinutes: 20,
+          content:
+            "<h3>Leave Policy</h3><p>How employees request leave, track attendance, and escalate HR issues.</p>",
+        },
+      ],
+      sopTitle: "New Hire Onboarding SOP",
+      quizTitle: "HR Policy Quiz",
+      passingPercentage: 80,
+      courseTitle: "HR Team Playbook",
+      courseDescription: "Onboarding, policies, and employee lifecycle for HR.",
+      lessons: [
+        {
+          title: "Day-One Onboarding",
+          content: "<h3>Day One</h3><p>Checklist for paperwork, system access, and orientation.</p>",
+          durationMinutes: 15,
+        },
+        {
+          title: "Performance Review Cycle",
+          content: "<h3>Reviews</h3><p>How quarterly and annual reviews are conducted.</p>",
+          durationMinutes: 20,
+        },
+      ],
+      pathName: "HR Starter Path",
+    },
+    Finance: {
+      chapters: [
+        {
+          title: "Expense Reimbursement Guide",
+          category: "Finance",
+          difficulty: "BEGINNER",
+          estimatedMinutes: 20,
+          content:
+            "<h3>Expenses</h3><p>How to submit, approve, and track employee expense claims.</p>",
+        },
+        {
+          title: "Month-End Close Checklist",
+          category: "Process",
+          difficulty: "INTERMEDIATE",
+          estimatedMinutes: 40,
+          content:
+            "<h3>Month-End</h3><p>Reconciliation steps, journal entries, and reporting deadlines.</p>",
+        },
+      ],
+      sopTitle: "Invoice Processing SOP",
+      quizTitle: "Finance Basics Quiz",
+      passingPercentage: 75,
+      courseTitle: "Finance Operations Training",
+      courseDescription: "AP/AR fundamentals and month-end procedures.",
+      lessons: [
+        {
+          title: "Chart of Accounts Overview",
+          content: "<h3>COA</h3><p>Key account categories used across Kharesiya Brands.</p>",
+          durationMinutes: 15,
+        },
+        {
+          title: "Vendor Payment Run",
+          content: "<h3>Payments</h3><p>Weekly payment batch process and approval matrix.</p>",
+          durationMinutes: 25,
+        },
+      ],
+      pathName: "Finance Starter Path",
+    },
+    Marketing: {
+      chapters: [
+        {
+          title: "Brand Voice & Guidelines",
+          category: "Brand",
+          difficulty: "BEGINNER",
+          estimatedMinutes: 25,
+          content:
+            "<h3>Brand</h3><p>Tone, visuals, and messaging standards for all Kharesiya marketing.</p>",
+        },
+        {
+          title: "Campaign Launch Checklist",
+          category: "Campaigns",
+          difficulty: "INTERMEDIATE",
+          estimatedMinutes: 30,
+          content:
+            "<h3>Campaigns</h3><p>Steps from brief to launch: assets, channels, tracking, and review.</p>",
+        },
+      ],
+      sopTitle: "Social Media Publishing SOP",
+      quizTitle: "Marketing Standards Quiz",
+      passingPercentage: 70,
+      courseTitle: "Marketing Onboarding",
+      courseDescription: "Brand, campaigns, and channel standards for Marketing.",
+      lessons: [
+        {
+          title: "Brand Assets & Templates",
+          content: "<h3>Assets</h3><p>Where to find logos, templates, and approved creative files.</p>",
+          durationMinutes: 15,
+        },
+        {
+          title: "Campaign Analytics Basics",
+          content: "<h3>Analytics</h3><p>Key metrics: reach, CTR, conversion, and ROAS.</p>",
+          durationMinutes: 20,
+        },
+      ],
+      pathName: "Marketing Starter Path",
+    },
+    Operations: {
+      chapters: [
+        {
+          title: "Warehouse Safety Fundamentals",
+          category: "Safety",
+          difficulty: "BEGINNER",
+          estimatedMinutes: 30,
+          content:
+            "<h3>Overview</h3><p>Essential safety protocols for warehouse and operations staff.</p>",
+        },
+        {
+          title: "Daily Shift Handover",
+          category: "Operations",
+          difficulty: "BEGINNER",
+          estimatedMinutes: 20,
+          content:
+            "<h3>Handover</h3><p>What to document and communicate between shifts.</p>",
+        },
+      ],
+      sopTitle: "Incident Reporting SOP",
+      quizTitle: "Safety Fundamentals",
+      passingPercentage: 80,
+      courseTitle: "Operations Onboarding",
+      courseDescription: "Complete self-paced onboarding for new operations team members.",
+      lessons: [
+        {
+          title: "Welcome to Kharesiya",
+          content: "<h3>Welcome</h3><p>Operations standards, safety culture, and team structure.</p>",
+          durationMinutes: 10,
+        },
+        {
+          title: "Safety Fundamentals",
+          content: "<h3>Safety First</h3><p>Warehouse safety protocols and hazard reporting.</p>",
+          durationMinutes: 20,
+        },
+      ],
+      pathName: "Operations Starter Path",
+    },
+    Quality: {
+      chapters: [
+        {
+          title: "Incoming Inspection Standards",
+          category: "Quality",
+          difficulty: "BEGINNER",
+          estimatedMinutes: 30,
+          content:
+            "<h3>Inspection</h3><p>Sample sizes, defect categories, and accept/reject criteria.</p>",
+        },
+        {
+          title: "Non-Conformance Reporting",
+          category: "Compliance",
+          difficulty: "INTERMEDIATE",
+          estimatedMinutes: 35,
+          content:
+            "<h3>NCR</h3><p>How to log, investigate, and close non-conformance reports.</p>",
+        },
+      ],
+      sopTitle: "Quality Inspection Protocol",
+      quizTitle: "Quality Standards",
+      passingPercentage: 75,
+      courseTitle: "Quality Assurance Training",
+      courseDescription: "Inspection, NCR, and compliance for Quality teams.",
+      lessons: [
+        {
+          title: "QC Tools Overview",
+          content: "<h3>Tools</h3><p>Checklists, calipers, and sampling tools used on the floor.</p>",
+          durationMinutes: 15,
+        },
+        {
+          title: "Root Cause Analysis",
+          content: "<h3>RCA</h3><p>5-Why and fishbone basics for defect investigation.</p>",
+          durationMinutes: 25,
+        },
+      ],
+      pathName: "Quality Starter Path",
+    },
+    "E-commerce": {
+      chapters: [
+        {
+          title: "Returns Processing Guide",
+          category: "E-commerce",
+          difficulty: "BEGINNER",
+          estimatedMinutes: 20,
+          content:
+            "<h3>Returns</h3><p>How to process customer returns for the E-commerce department.</p>",
+        },
+        {
+          title: "Marketplace Listing Standards",
+          category: "E-commerce",
+          difficulty: "INTERMEDIATE",
+          estimatedMinutes: 30,
+          content:
+            "<h3>Listings</h3><p>Title, images, attributes, and compliance for online listings.</p>",
+        },
+      ],
+      sopTitle: "Order Fulfillment SOP",
+      quizTitle: "E-commerce Operations Quiz",
+      passingPercentage: 70,
+      courseTitle: "E-commerce Fulfillment Training",
+      courseDescription: "Order processing, returns, and fulfillment for E-commerce.",
+      lessons: [
+        {
+          title: "Picking & Packing Standards",
+          content: "<h3>Fulfillment</h3><p>Accuracy standards for picking and packing online orders.</p>",
+          durationMinutes: 15,
+        },
+        {
+          title: "Customer Service Escalations",
+          content: "<h3>Escalations</h3><p>When and how to escalate order issues to team leads.</p>",
+          durationMinutes: 20,
+        },
+      ],
+      pathName: "E-commerce Starter Path",
+    },
+  };
 
-  const sampleSOPs = [
-    { title: "Purchase Order Approval", department: "Purchase" },
-    { title: "Stock Count Procedure", department: "Inventory" },
-    { title: "Quality Inspection Protocol", department: "Quality" },
+  const defaultQuestions = [
+    {
+      type: "SINGLE_CHOICE" as const,
+      text: "What should you do before starting hands-on work in this module?",
+      options: ["Read the overview", "Skip to quiz", "Ignore SOPs"],
+      correctAnswer: "Read the overview",
+      order: 0,
+      points: 1,
+    },
+    {
+      type: "TRUE_FALSE" as const,
+      text: "Following department SOPs ensures consistency across teams.",
+      correctAnswer: true,
+      order: 1,
+      points: 1,
+    },
   ];
 
-  for (const sop of sampleSOPs) {
-    const departmentId = deptByName[sop.department];
+  let chapterCount = 0;
+  let sopCount = 0;
+  let quizCount = 0;
+  let courseCount = 0;
+  let pathCount = 0;
+
+  for (const [deptName, content] of Object.entries(departmentContent)) {
+    const departmentId = deptByName[deptName];
     if (!departmentId) continue;
 
-    const existing = await prisma.sOP.findFirst({
-      where: { title: sop.title, departmentId },
-    });
+    for (const ch of content.chapters) {
+      const existing = await prisma.knowledgeChapter.findFirst({
+        where: { title: ch.title, departmentId },
+      });
+      if (!existing) {
+        await prisma.knowledgeChapter.create({
+          data: {
+            title: ch.title,
+            departmentId,
+            category: ch.category,
+            difficulty: ch.difficulty,
+            estimatedMinutes: ch.estimatedMinutes,
+            content: ch.content,
+            founderNotes: ch.founderNotes,
+            status: "PUBLISHED",
+            publishedAt: new Date(),
+            authorId: admin.id,
+          },
+        });
+        chapterCount++;
+      }
+    }
 
-    if (!existing) {
+    const existingSop = await prisma.sOP.findFirst({
+      where: { title: content.sopTitle, departmentId },
+    });
+    if (!existingSop) {
       await prisma.sOP.create({
         data: {
-          title: sop.title,
+          title: content.sopTitle,
           departmentId,
           ownerId: admin.id,
           effectiveDate: new Date(),
@@ -241,137 +543,35 @@ async function main() {
           approvalStatus: "APPROVED",
         },
       });
+      sopCount++;
     }
-  }
-  console.log(`✓ ${sampleSOPs.length} SOPs`);
 
-  const opsDeptId = deptByName["Operations"];
-  const invDeptId = deptByName["Inventory"];
-  const qualDeptId = deptByName["Quality"];
-
-  const sampleQuizzes = [
-    { title: "Safety Fundamentals", departmentId: opsDeptId, passingPercentage: 80 },
-    { title: "Inventory Basics", departmentId: invDeptId, passingPercentage: 70 },
-    { title: "Quality Standards", departmentId: qualDeptId, passingPercentage: 75 },
-  ];
-
-  for (const q of sampleQuizzes) {
-    if (!q.departmentId) continue;
-
-    const existing = await prisma.quiz.findFirst({
-      where: { title: q.title, departmentId: q.departmentId },
+    let quiz = await prisma.quiz.findFirst({
+      where: { title: content.quizTitle, departmentId },
     });
-
-    if (!existing) {
-      await prisma.quiz.create({
+    if (!quiz) {
+      quiz = await prisma.quiz.create({
         data: {
-          title: q.title,
-          departmentId: q.departmentId,
-          passingPercentage: q.passingPercentage,
+          title: content.quizTitle,
+          departmentId,
+          passingPercentage: content.passingPercentage,
           status: "PUBLISHED",
           authorId: admin.id,
-          questions: {
-            create: [
-              {
-                type: "SINGLE_CHOICE",
-                text: "What is the first step when starting this module?",
-                options: ["Read the overview", "Skip to quiz", "Request exemption"],
-                correctAnswer: "Read the overview",
-                order: 0,
-                points: 1,
-              },
-              {
-                type: "TRUE_FALSE",
-                text: "Following SOPs ensures consistency across teams.",
-                correctAnswer: true,
-                order: 1,
-                points: 1,
-              },
-            ],
-          },
+          questions: { create: defaultQuestions },
         },
       });
+      quizCount++;
     }
-  }
-  console.log(`✓ ${sampleQuizzes.length} quizzes`);
 
-  const opsId = deptByName["Operations"];
-  const existingCourse = await prisma.course.findFirst({
-    where: { title: "Operations Onboarding" },
-  });
-
-  if (!existingCourse && opsId) {
-    const course = await prisma.course.create({
-      data: {
-        title: "Operations Onboarding",
-        description: "Complete self-paced onboarding for new operations team members.",
-        departmentId: opsId,
-        difficulty: "BEGINNER",
-        estimatedHours: 2,
-        status: "PUBLISHED",
-        isSelfPaced: true,
-        publishedAt: new Date(),
-        authorId: admin.id,
-        modules: {
-          create: [
-            {
-              title: "Welcome & Safety",
-              order: 0,
-              lessons: {
-                create: [
-                  {
-                    title: "Welcome to Kharesiya",
-                    order: 0,
-                    contentType: "TEXT",
-                    durationMinutes: 10,
-                    content:
-                      "<h3>Welcome</h3><p>This course introduces you to Kharesiya Brands operations standards and safety practices.</p>",
-                  },
-                  {
-                    title: "Safety Fundamentals",
-                    order: 1,
-                    contentType: "TEXT",
-                    durationMinutes: 20,
-                    content:
-                      "<h3>Safety First</h3><p>Always follow warehouse safety protocols. Report hazards immediately.</p>",
-                  },
-                ],
-              },
-            },
-            {
-              title: "Daily Operations",
-              order: 1,
-              lessons: {
-                create: [
-                  {
-                    title: "Receiving Workflow Overview",
-                    order: 0,
-                    contentType: "TEXT",
-                    durationMinutes: 25,
-                    content:
-                      "<h3>Receiving</h3><p>Learn the standard receiving workflow for inbound inventory.</p>",
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      },
+    const existingCourse = await prisma.course.findFirst({
+      where: { title: content.courseTitle, departmentId },
     });
-    console.log(`✓ LMS course: ${course.title}`);
-  }
-
-  const ecommerceId = deptByName["E-commerce"];
-  if (ecommerceId) {
-    const existingEcomCourse = await prisma.course.findFirst({
-      where: { title: "E-commerce Fulfillment Training", departmentId: ecommerceId },
-    });
-    if (!existingEcomCourse) {
+    if (!existingCourse) {
       await prisma.course.create({
         data: {
-          title: "E-commerce Fulfillment Training",
-          description: "E-commerce team only — order processing, returns, and fulfillment SOPs.",
-          departmentId: ecommerceId,
+          title: content.courseTitle,
+          description: content.courseDescription,
+          departmentId,
           difficulty: "BEGINNER",
           estimatedHours: 1.5,
           status: "PUBLISHED",
@@ -381,44 +581,166 @@ async function main() {
           modules: {
             create: [
               {
-                title: "Order Fulfillment",
+                title: `${deptName} Essentials`,
                 order: 0,
                 lessons: {
-                  create: [
-                    {
-                      title: "Picking & Packing Standards",
-                      order: 0,
-                      contentType: "TEXT",
-                      durationMinutes: 15,
-                      content: "<h3>E-commerce Fulfillment</h3><p>Standards for picking and packing online orders accurately.</p>",
-                    },
-                  ],
+                  create: content.lessons.map((lesson, order) => ({
+                    title: lesson.title,
+                    order,
+                    contentType: "TEXT",
+                    durationMinutes: lesson.durationMinutes,
+                    content: lesson.content,
+                  })),
                 },
               },
             ],
           },
         },
       });
-      console.log("✓ E-commerce department course");
+      courseCount++;
     }
 
-    const existingEcomChapter = await prisma.knowledgeChapter.findFirst({
-      where: { title: "Returns Processing Guide", departmentId: ecommerceId },
+    const firstChapter = await prisma.knowledgeChapter.findFirst({
+      where: { departmentId, status: "PUBLISHED" },
+      orderBy: { createdAt: "asc" },
     });
-    if (!existingEcomChapter) {
-      await prisma.knowledgeChapter.create({
+
+    const existingPath = await prisma.learningPath.findFirst({
+      where: { name: content.pathName, departmentId },
+    });
+    if (!existingPath && firstChapter && quiz) {
+      await prisma.learningPath.create({
         data: {
-          title: "Returns Processing Guide",
-          departmentId: ecommerceId,
-          category: "E-commerce",
-          difficulty: "BEGINNER",
-          estimatedMinutes: 20,
-          content: "<h3>Returns</h3><p>How to process customer returns for the E-commerce department.</p>",
+          name: content.pathName,
+          description: `Recommended learning path for ${deptName} team members.`,
+          departmentId,
+          durationDays: 14,
+          passingScore: content.passingPercentage,
           status: "PUBLISHED",
-          publishedAt: new Date(),
-          authorId: admin.id,
+          items: {
+            create: [
+              { chapterId: firstChapter.id, order: 0, isRequired: true, dueDays: 7 },
+              { quizId: quiz.id, order: 1, isRequired: true, dueDays: 14 },
+            ],
+          },
         },
       });
+      pathCount++;
+    }
+
+    console.log(`✓ Content seeded for ${deptName}`);
+  }
+
+  console.log(
+    `\n✓ Added ${chapterCount} chapters, ${sopCount} SOPs, ${quizCount} quizzes, ${courseCount} courses, ${pathCount} learning paths`
+  );
+
+  const purchaseDept = await prisma.department.findUnique({ where: { name: "Purchase" } });
+  if (purchaseDept) {
+    const checklistChapter = await prisma.knowledgeChapter.findFirst({
+      where: { title: "SKU Creative Checklist", departmentId: purchaseDept.id },
+    });
+    if (checklistChapter) {
+      const existingAttachment = await prisma.attachment.findFirst({
+        where: {
+          chapterId: checklistChapter.id,
+          originalName: SKU_CREATIVE_CHECKLIST_ATTACHMENT.originalName,
+        },
+      });
+      if (!existingAttachment) {
+        await prisma.attachment.create({
+          data: { ...SKU_CREATIVE_CHECKLIST_ATTACHMENT, chapterId: checklistChapter.id },
+        });
+        console.log("✓ Attached SKU Creative Checklist.xlsx to Purchase chapter");
+      }
+    }
+
+    const purchaseCourse = await prisma.course.findFirst({
+      where: { title: "Purchase Team Onboarding", departmentId: purchaseDept.id },
+      include: { modules: { include: { lessons: true }, orderBy: { order: "asc" } } },
+    });
+    if (purchaseCourse?.modules[0]) {
+      const module = purchaseCourse.modules[0];
+      const existingLesson = module.lessons.find((l) => l.title === "SKU Creative Checklist Walkthrough");
+      if (!existingLesson) {
+        const nextOrder = module.lessons.length
+          ? Math.max(...module.lessons.map((l) => l.order)) + 1
+          : 0;
+        await prisma.lesson.create({
+          data: {
+            moduleId: module.id,
+            title: "SKU Creative Checklist Walkthrough",
+            order: nextOrder,
+            contentType: "TEXT",
+            durationMinutes: 45,
+            content:
+              "<h3>Packaging Artwork Approval</h3><p>Use the SKU Creative Checklist to verify all 150 checkpoints across product identity, legal metrology, regulatory compliance, barcodes, packaging materials, artwork design, marketplace compliance, and final QA before releasing artwork to print.</p><p>Download the Excel template from the chapter attachments and obtain sign-off from Procurement along with QA, Regulatory, and Brand teams.</p>",
+          },
+        });
+        console.log("✓ Added SKU Creative Checklist lesson to Purchase course");
+      }
+    }
+  }
+
+  if (admin) {
+    const sampleTasks = [
+      {
+        title: "Complete SKU artwork review for Q3 launch",
+        description:
+          "Review all pending packaging artwork against the SKU Creative Checklist. Coordinate with QA and Regulatory for sign-off before sending to print vendors.",
+        departmentName: "Purchase",
+        priority: "HIGH" as const,
+        dueDays: 14,
+      },
+      {
+        title: "Update vendor onboarding SOP",
+        description:
+          "Refresh the vendor onboarding documentation to include new compliance requirements and approval matrix.",
+        departmentName: "Operations",
+        priority: "MEDIUM" as const,
+        dueDays: 21,
+      },
+      {
+        title: "Prepare monthly inventory cycle count report",
+        description:
+          "Run cycle counts across all warehouses and submit variance report with root-cause analysis.",
+        departmentName: "Inventory",
+        priority: "URGENT" as const,
+        dueDays: 7,
+      },
+    ];
+
+    let taskCount = 0;
+    for (const sample of sampleTasks) {
+      const dept = await prisma.department.findUnique({ where: { name: sample.departmentName } });
+      if (!dept) continue;
+
+      const existing = await prisma.departmentTask.findFirst({
+        where: { title: sample.title, departmentId: dept.id },
+      });
+      if (existing) continue;
+
+      await prisma.departmentTask.create({
+        data: {
+          title: sample.title,
+          description: sample.description,
+          departmentId: dept.id,
+          assignedById: admin.id,
+          priority: sample.priority,
+          dueDate: new Date(Date.now() + sample.dueDays * 24 * 60 * 60 * 1000),
+          updates: {
+            create: {
+              userId: admin.id,
+              status: "ASSIGNED",
+              note: "Task assigned by founder",
+            },
+          },
+        },
+      });
+      taskCount++;
+    }
+    if (taskCount > 0) {
+      console.log(`✓ Seeded ${taskCount} founder-assigned department tasks`);
     }
   }
 

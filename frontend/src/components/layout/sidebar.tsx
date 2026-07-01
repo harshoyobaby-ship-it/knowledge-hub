@@ -23,6 +23,7 @@ import {
   Bot,
   Presentation,
   BarChart3,
+  ListTodo,
   Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ import { UserRole } from "@prisma/client";
 
 const managerPanelItems = [
   { href: "/manager", label: "Manager Dashboard", icon: LayoutDashboard },
+  { href: "/department-tasks", label: "Department Tasks", icon: ListTodo },
   { href: "/manager/employees", label: "Team Progress", icon: TrendingUp },
   { href: "/admin/content", label: "Department Content", icon: FolderOpen },
   { href: "/admin/courses", label: "Courses", icon: GraduationCap },
@@ -47,6 +49,7 @@ const hrPanelItems = [
 
 const learnerItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/department-tasks", label: "Department Tasks", icon: ListTodo },
   { href: "/courses", label: "My Courses", icon: Library },
   { href: "/learning-paths", label: "Learning Paths", icon: Route },
   { href: "/learning-modules", label: "Knowledge Base", icon: BookOpen },
@@ -68,6 +71,7 @@ type PanelItem = {
 
 const panelItems: PanelItem[] = [
   { href: "/admin", label: "Admin Panel", icon: Shield, roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN] },
+  { href: "/admin/tasks", label: "Founder Tasks", icon: ListTodo, roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN] },
   { href: "/admin/content", label: "Content", icon: FolderOpen, roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.HR, UserRole.MANAGER, UserRole.DEPARTMENT_HEAD, UserRole.TRAINER] },
   { href: "/admin/courses", label: "Courses", icon: GraduationCap, roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.HR, UserRole.MANAGER, UserRole.DEPARTMENT_HEAD, UserRole.TRAINER] },
   { href: "/admin/email", label: "Email Automation", icon: Mail, roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.HR] },

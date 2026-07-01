@@ -1,23 +1,18 @@
 import { prisma } from "@/lib/prisma";
-import {
-  createToken,
-  setAuthCookie,
-  verifyPassword,
-} from "@/lib/auth";
+import { verifyPassword } from "@/lib/auth";
 import {
   apiSuccess,
   apiError,
   handleApiError,
-  createAuditLog,
 } from "@/lib/api-helpers";
 import { loginSchema } from "@/lib/validations";
 import { isDatabaseConfigured, databaseUnavailableMessage } from "@/lib/db";
 import {
-  canBypassDepartmentFilter,
-  requiresDepartmentAssignment,
   getUserAssignedDepartments,
   validateSelectedDepartment,
+  requiresDepartmentAssignment,
 } from "@/lib/department-access";
+import { establishLoginSession } from "@/lib/login-session";
 
 export async function POST(request: Request) {
   try {
@@ -44,9 +39,9 @@ export async function POST(request: Request) {
       return apiError("Invalid email or password", 401);
     }
 
-    const assignedDepartments = await getUserAssignedDepartments(user);
-
     if (requiresDepartmentAssignment(user.role)) {
+      const assignedDepartments = await getUserAssignedDepartments(user);
+
       if (assignedDepartments.length === 0) {
         return apiError(
           "No department assigned to your account. Please contact your administrator.",
@@ -72,37 +67,24 @@ export async function POST(request: Request) {
       }
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
-
-    const sessionDepartmentId = canBypassDepartmentFilter(user.role)
-      ? null
-      : user.departmentId;
-
-    const token = await createToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      departmentId: sessionDepartmentId,
-    });
-
-    await setAuthCookie(token);
-
-    await createAuditLog({
-      userId: user.id,
-      action: "LOGIN",
-      entityType: "User",
-      entityId: user.id,
-      details: {
-        departmentId: sessionDepartmentId,
-        departmentName: user.department?.name,
-      },
+    const result = await establishLoginSession({
+      user,
+      departmentId,
       ipAddress: request.headers.get("x-forwarded-for") || undefined,
+      method: "password",
     });
+
+    if ("requiresDepartment" in result) {
+      return apiSuccess({
+        requiresDepartment: true,
+        departments: result.departments,
+        user: {
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+      });
+    }
 
     return apiSuccess({
       requiresDepartment: false,
@@ -114,7 +96,7 @@ export async function POST(request: Request) {
         role: user.role,
         avatar: user.avatar,
         department: user.department,
-        departmentId: sessionDepartmentId,
+        departmentId: user.departmentId,
       },
     });
   } catch (error) {

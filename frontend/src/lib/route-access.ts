@@ -9,6 +9,7 @@ export interface RouteRule {
 
 /** Longest-prefix match wins — keep specific routes before general ones. */
 export const ROUTE_RULES: RouteRule[] = [
+  { prefix: "/admin/tasks", permissions: ["ASSIGN_FOUNDER_TASKS"] },
   { prefix: "/admin/users", permissions: ["MANAGE_USERS"] },
   { prefix: "/admin/content", permissions: ["MANAGE_CONTENT"] },
   { prefix: "/admin/courses", permissions: ["MANAGE_COURSES"] },
@@ -47,6 +48,7 @@ export const AUTHENTICATED_PREFIXES = [
   "/search",
   "/profile",
   "/certificates",
+  "/department-tasks",
   "/admin",
   "/hr",
   "/trainer",

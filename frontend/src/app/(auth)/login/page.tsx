@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { loginSchema, type LoginInput } from "@/lib/validations";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+
+const LOGIN_ERRORS: Record<string, string> = {
+  google_denied: "Google sign-in was cancelled.",
+  google_no_account: "No account found for this Google email. Contact your administrator.",
+  google_unverified: "Your Google email is not verified.",
+  google_not_configured: "Google sign-in is not available yet.",
+  google_department: "Use email and password to select your department.",
+  google_failed: "Google sign-in failed. Please try again.",
+  google_state: "Google sign-in expired. Please try again.",
+  google_invalid: "Invalid Google sign-in response.",
+};
 
 interface AssignedDepartment {
   id: string;
@@ -29,11 +41,17 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/dashboard";
+  const errorCode = searchParams.get("error");
+  const errorMessage = searchParams.get("message") || (errorCode ? LOGIN_ERRORS[errorCode] : null);
   const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
   const [step, setStep] = useState<"credentials" | "department">("credentials");
   const [departments, setDepartments] = useState<AssignedDepartment[]>([]);
   const [pendingCredentials, setPendingCredentials] = useState<LoginInput | null>(null);
+
+  useEffect(() => {
+    if (errorMessage) toast.error(errorMessage);
+  }, [errorMessage]);
 
   const {
     register,
@@ -146,6 +164,19 @@ function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <GoogleSignInButton redirect={redirect} />
+
+        {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">or continue with email</span>
+            </div>
+          </div>
+        )}
+
         {demoMode && (
           <>
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">

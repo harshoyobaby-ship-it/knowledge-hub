@@ -66,6 +66,10 @@ export default function ManagerPanelPage() {
             <p className="font-medium">Team Progress</p>
             <p className="text-sm text-muted-foreground">View employee training completion</p>
           </Link>
+          <Link href="/department-tasks" className="rounded-lg border p-4 hover:bg-accent">
+            <p className="font-medium">Department Tasks</p>
+            <p className="text-sm text-muted-foreground">Follow up on founder-assigned tasks</p>
+          </Link>
           <Link href="/admin/content" className="rounded-lg border p-4 hover:bg-accent">
             <p className="font-medium">Department Content</p>
             <p className="text-sm text-muted-foreground">Add modules, SOPs, and quizzes</p>
