@@ -19,6 +19,12 @@ REQUEST_COUNT = Counter("kharesiya_requests_total", "Total HTTP requests", ["end
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
+    # Fast liveness probe for Render — must respond in <5s.
+    return HealthResponse(status="healthy", version="1.0.0", services={"api": "healthy"})
+
+
+@router.get("/health/ready", response_model=HealthResponse)
+async def readiness_check() -> HealthResponse:
     services: dict[str, str] = {}
 
     try:

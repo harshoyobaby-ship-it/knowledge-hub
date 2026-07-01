@@ -1,0 +1,17 @@
+.venv
+node_modules
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.coverage
+htmlcov
+data/uploads
+data/documents
+data/vectors
+logs
+.git
+.env
+.env.*
+*.md
+backend/
