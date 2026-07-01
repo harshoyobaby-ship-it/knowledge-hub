@@ -1,7 +1,7 @@
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.schemas.chat import ChatRequest, ChatResponse, SearchResponse
-from app.services.ollama_client import OllamaClient
+from app.services.embedder.factory import get_embedder
 from app.core.interfaces.vector_store import VectorStore
 from app.services.llm.factory import get_llm_client
 from app.services.vector.factory import get_vector_store
@@ -20,11 +20,11 @@ class RAGService:
     def __init__(
         self,
         vector_store: VectorStore | None = None,
-        embedder: OllamaClient | None = None,
+        embedder=None,
         llm=None,
     ) -> None:
         self.vector_store = vector_store or get_vector_store()
-        self.embedder = embedder or OllamaClient()
+        self.embedder = embedder or get_embedder()
         self.llm = llm or get_llm_client()
 
     def _department_filter(self, department_id: str | None) -> dict[str, str] | None:

@@ -8,7 +8,7 @@ from app.core.redis import get_redis
 from app.core.config import get_settings
 from app.schemas.health import HealthResponse
 from app.services.llm.factory import get_llm_client
-from app.services.ollama_client import OllamaClient
+from app.services.embedder.factory import get_embedder
 from app.services.vector.factory import get_vector_store
 
 router = APIRouter(tags=["health"])
@@ -35,8 +35,9 @@ async def health_check() -> HealthResponse:
     except Exception:
         services["redis"] = "unhealthy"
 
-    embedder = OllamaClient()
-    services["ollama_embeddings"] = "healthy" if await embedder.health_check() else "unhealthy"
+    embedder = get_embedder()
+    embedder_name = "ollama_embeddings" if settings.local_dev else "embeddings"
+    services[embedder_name] = "healthy" if await embedder.health_check() else "unhealthy"
 
     llm = get_llm_client()
     llm_name = settings.llm_provider
@@ -46,7 +47,7 @@ async def health_check() -> HealthResponse:
     store_name = "pinecone" if settings.use_pinecone else "local_vectors"
     services[store_name] = "healthy" if await vector_store.health_check() else "unhealthy"
 
-    critical = ["database", "ollama_embeddings", llm_name, store_name]
+    critical = ["database", embedder_name, llm_name, store_name]
     overall = "healthy" if all(services.get(s) == "healthy" for s in critical) else "degraded"
 
     return HealthResponse(

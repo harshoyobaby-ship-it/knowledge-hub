@@ -3,7 +3,7 @@ from app.core.interfaces.vector_store import VectorRecord, VectorStore
 from app.core.logging import get_logger
 from app.models import RagDocument, RagDocumentStatus
 from app.repositories import DocumentRepository
-from app.services.ollama_client import OllamaClient
+from app.services.embedder.factory import get_embedder
 from app.services.storage.local_storage import LocalFileStorage
 from app.services.vector.factory import get_vector_store
 from app.utils.extractors import extract_text
@@ -19,12 +19,12 @@ class IngestionService:
         document_repo: DocumentRepository,
         vector_store: VectorStore | None = None,
         file_storage: LocalFileStorage | None = None,
-        ollama: OllamaClient | None = None,
+        embedder=None,
     ) -> None:
         self.document_repo = document_repo
         self.vector_store = vector_store or get_vector_store()
         self.file_storage = file_storage or LocalFileStorage()
-        self.ollama = ollama or OllamaClient()
+        self.embedder = embedder or get_embedder()
 
     async def ingest_document(self, document_id: str) -> RagDocument:
         document = await self.document_repo.get_by_id(document_id)
@@ -57,7 +57,7 @@ class IngestionService:
                 raise ValueError("No text could be extracted from the document")
 
             texts = [chunk for _, _, chunk in all_chunks]
-            embeddings = await self.ollama.embed_batch(texts)
+            embeddings = await self.embedder.embed_batch(texts)
 
             records: list[VectorRecord] = []
             for global_idx, ((page_num, _, chunk_text_content), embedding) in enumerate(
