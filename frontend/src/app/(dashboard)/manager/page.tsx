@@ -66,9 +66,13 @@ export default function ManagerPanelPage() {
             <p className="font-medium">Team Progress</p>
             <p className="text-sm text-muted-foreground">View employee training completion</p>
           </Link>
+          <Link href="/manager/tasks" className="rounded-lg border p-4 hover:bg-accent">
+            <p className="font-medium">Assign Team Tasks</p>
+            <p className="text-sm text-muted-foreground">Give tasks to employees in your department</p>
+          </Link>
           <Link href="/department-tasks" className="rounded-lg border p-4 hover:bg-accent">
-            <p className="font-medium">Department Tasks</p>
-            <p className="text-sm text-muted-foreground">Follow up on founder-assigned tasks</p>
+            <p className="font-medium">Founder Tasks</p>
+            <p className="text-sm text-muted-foreground">Follow up on founder-assigned department directives</p>
           </Link>
           <Link href="/admin/content" className="rounded-lg border p-4 hover:bg-accent">
             <p className="font-medium">Department Content</p>

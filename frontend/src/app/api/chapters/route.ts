@@ -221,7 +221,7 @@ export async function POST(request: Request) {
       },
     });
 
-    if (status === "PUBLISHED") {
+    if (status === "PUBLISHED" && isFounder(auth)) {
       await notifyDepartmentOfFounderKnowledge({
         departmentId: data.departmentId,
         title: chapter.title,

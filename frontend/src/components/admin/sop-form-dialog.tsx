@@ -23,6 +23,7 @@ import {
 import { createSOPSchema, updateSOPSchema } from "@/lib/validations";
 import { STATUS_LABELS } from "@/types";
 import { FileUploadField, type ExistingAttachment } from "@/components/admin/file-upload-field";
+import { LockedDepartmentField } from "@/components/admin/locked-department-field";
 
 export interface SOPRecord {
   id: string;
@@ -46,6 +47,7 @@ interface SOPFormDialogProps {
   sop?: SOPRecord | null;
   departments: Department[];
   lockedDepartmentId?: string | null;
+  lockedDepartmentName?: string | null;
   onSubmit: (data: Record<string, unknown>) => Promise<{ id: string } | void>;
 }
 
@@ -91,6 +93,7 @@ export function SOPFormDialog({
   sop,
   departments,
   lockedDepartmentId,
+  lockedDepartmentName,
   onSubmit,
 }: SOPFormDialogProps) {
   const isEdit = !!sop;
@@ -160,20 +163,28 @@ export function SOPFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Department</Label>
-              <Controller
-                name="departmentId"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange} disabled={!!lockedDepartmentId}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              {lockedDepartmentId ? (
+                <LockedDepartmentField
+                  departmentId={lockedDepartmentId}
+                  departmentName={lockedDepartmentName}
+                  departments={departments}
+                />
+              ) : (
+                <Controller
+                  name="departmentId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {departments.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Status</Label>

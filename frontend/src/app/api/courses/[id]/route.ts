@@ -26,6 +26,15 @@ export async function GET(
       include: {
         department: { select: { id: true, name: true } },
         author: { select: { firstName: true, lastName: true } },
+        attachments: {
+          select: {
+            id: true,
+            originalName: true,
+            mimeType: true,
+            size: true,
+            url: true,
+          },
+        },
         modules: {
           orderBy: { order: "asc" },
           include: {

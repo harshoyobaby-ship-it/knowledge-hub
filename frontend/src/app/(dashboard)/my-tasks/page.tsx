@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
-import { ListTodo, Building2, Calendar, ArrowRight, Paperclip } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ListTodo, Calendar, User } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,48 +19,52 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { TaskStatusBadge, TaskPriorityBadge } from "@/components/tasks/task-badges";
 import { TASK_STATUS_LABELS } from "@/types";
 import { formatDate } from "@/lib/utils";
-import { useAuth } from "@/hooks/use-auth";
 
-async function fetchDepartmentTasks(status?: string) {
-  const params = new URLSearchParams({ limit: "100" });
+async function fetchMyTasks(status?: string) {
+  const params = new URLSearchParams({ limit: "50" });
   if (status && status !== "all") params.set("status", status);
-  const res = await fetch(`/api/department-tasks?${params}`, { credentials: "include" });
+  const res = await fetch(`/api/employee-tasks?${params}`, { credentials: "include" });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error);
   return json.data;
 }
 
-export default function DepartmentTasksPage() {
-  const { user } = useAuth();
+export default function MyTasksPage() {
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["department-tasks", statusFilter],
-    queryFn: () => fetchDepartmentTasks(statusFilter),
+    queryKey: ["my-employee-tasks", statusFilter],
+    queryFn: () => fetchMyTasks(statusFilter),
+  });
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const res = await fetch(`/api/employee-tasks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      return json.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-employee-tasks"] });
+      toast.success("Task updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const tasks = data?.data ?? [];
-  const openCount = tasks.filter((t: { status: string }) => t.status !== "COMPLETED" && t.status !== "CANCELLED").length;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Founder Tasks"
-        description={
-          user?.department?.name
-            ? `Directives from leadership assigned to ${user.department.name} only`
-            : "Follow up on founder-assigned tasks for your department"
-        }
+        title="My Tasks"
+        description="Tasks assigned to you by your manager"
       />
-
-      {user?.department?.name && (
-        <div className="flex items-center gap-2 rounded-lg border bg-primary/5 px-4 py-3 text-sm">
-          <Building2 className="h-4 w-4" />
-          <span>
-            <strong>{openCount}</strong> open task{openCount === 1 ? "" : "s"} for {user.department.name}
-          </span>
-        </div>
-      )}
 
       <Select value={statusFilter} onValueChange={setStatusFilter}>
         <SelectTrigger className="w-[180px]">
@@ -79,8 +83,8 @@ export default function DepartmentTasksPage() {
       ) : !tasks.length ? (
         <EmptyState
           icon={ListTodo}
-          title="No tasks for your department"
-          description="When the founder assigns a department-wide task, it will appear here for your team."
+          title="No tasks assigned"
+          description="When your manager assigns you work, it will appear here."
         />
       ) : (
         <div className="space-y-3">
@@ -92,8 +96,6 @@ export default function DepartmentTasksPage() {
             priority: string;
             dueDate?: string;
             assignedBy: { firstName: string; lastName: string };
-            _count: { updates: number };
-            attachments?: { id: string }[];
           }) => (
             <Card key={task.id}>
               <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
@@ -103,32 +105,41 @@ export default function DepartmentTasksPage() {
                     <TaskStatusBadge status={task.status} />
                     <TaskPriorityBadge priority={task.priority} />
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {task.description || "No instructions provided"}
-                  </p>
+                  {task.description && (
+                    <p className="text-sm text-muted-foreground">{task.description}</p>
+                  )}
                   <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                    <span>Assigned by {task.assignedBy.firstName} {task.assignedBy.lastName}</span>
+                    <span className="inline-flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      From {task.assignedBy.firstName} {task.assignedBy.lastName}
+                    </span>
                     {task.dueDate && (
                       <span className="inline-flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5" />
+                        <Calendar className="h-3 w-3" />
                         Due {formatDate(task.dueDate)}
-                      </span>
-                    )}
-                    <span>{task._count.updates} follow-up updates</span>
-                    {(task.attachments?.length ?? 0) > 0 && (
-                      <span className="inline-flex items-center gap-1">
-                        <Paperclip className="h-3.5 w-3.5" />
-                        {task.attachments!.length} attachment{task.attachments!.length === 1 ? "" : "s"}
                       </span>
                     )}
                   </div>
                 </div>
-                <Button asChild>
-                  <Link href={`/department-tasks/${task.id}`}>
-                    {task.status === "ASSIGNED" ? "Start follow-up" : "View task"}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
+                <div className="flex gap-2">
+                  {task.status === "ASSIGNED" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateStatus.mutate({ id: task.id, status: "IN_PROGRESS" })}
+                    >
+                      Start
+                    </Button>
+                  )}
+                  {task.status !== "COMPLETED" && task.status !== "CANCELLED" && (
+                    <Button
+                      size="sm"
+                      onClick={() => updateStatus.mutate({ id: task.id, status: "COMPLETED" })}
+                    >
+                      Mark complete
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}

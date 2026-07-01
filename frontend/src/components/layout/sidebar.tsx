@@ -43,7 +43,8 @@ const founderPanelItems = [
 
 const managerPanelItems = [
   { href: "/manager", label: "Manager Dashboard", icon: LayoutDashboard },
-  { href: "/department-tasks", label: "Department Tasks", icon: ListTodo },
+  { href: "/manager/tasks", label: "Team Tasks", icon: ListTodo },
+  { href: "/department-tasks", label: "Founder Tasks", icon: Crown },
   { href: "/manager/employees", label: "Team Progress", icon: TrendingUp },
   { href: "/admin/content", label: "Department Content", icon: FolderOpen },
   { href: "/admin/courses", label: "Courses", icon: GraduationCap },
@@ -61,7 +62,8 @@ const hrPanelItems = [
 
 const learnerItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/department-tasks", label: "Department Tasks", icon: ListTodo },
+  { href: "/my-tasks", label: "My Tasks", icon: ListTodo },
+  { href: "/department-tasks", label: "Founder Tasks", icon: Crown },
   { href: "/courses", label: "My Courses", icon: Library },
   { href: "/learning-paths", label: "Learning Paths", icon: Route },
   { href: "/learning-modules", label: "Knowledge Base", icon: BookOpen },

@@ -22,11 +22,47 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { UserRole } from "@prisma/client";
 import { STATUS_LABELS, DIFFICULTY_LABELS } from "@/types";
 import { cn, formatDate } from "@/lib/utils";
+import { getScopedDepartment, filterDepartmentsForUser } from "@/lib/department-scope";
+import { LockedDepartmentField } from "@/components/admin/locked-department-field";
+import {
+  FileUploadField,
+  type ExistingAttachment,
+} from "@/components/admin/file-upload-field";
 
 interface Department { id: string; name: string }
+
+async function syncCourseAttachments(
+  courseId: string,
+  files: ExistingAttachment[],
+  initialIds: string[]
+) {
+  const currentIds = files.filter((f) => !f.id.startsWith("pending-")).map((f) => f.id);
+  const removed = initialIds.filter((id) => !currentIds.includes(id));
+
+  for (const id of removed) {
+    await fetch(`/api/courses/${courseId}/attachments?attachmentId=${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+  }
+
+  for (const file of files.filter((f) => f.id.startsWith("pending-"))) {
+    await fetch(`/api/courses/${courseId}/attachments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename: file.filename,
+        originalName: file.originalName,
+        mimeType: file.mimeType,
+        size: file.size,
+        url: file.url,
+      }),
+      credentials: "include",
+    });
+  }
+}
 
 async function fetchCourses() {
   const res = await fetch("/api/courses?manage=true&limit=50", { credentials: "include" });
@@ -64,8 +100,12 @@ export default function AdminCoursesPage() {
   });
   const [uploading, setUploading] = useState(false);
   const [pendingResources, setPendingResources] = useState<Record<string, unknown>[]>([]);
+  const [courseAttachments, setCourseAttachments] = useState<ExistingAttachment[]>([]);
+  const [initialCourseAttachmentIds, setInitialCourseAttachmentIds] = useState<string[]>([]);
 
-  const lockedDept = user?.role === UserRole.DEPARTMENT_HEAD ? user.departmentId : null;
+  const scopedDept = getScopedDepartment(user);
+  const lockedDept = scopedDept?.id ?? null;
+  const lockedDeptName = scopedDept?.name ?? null;
 
   const { data: courses, isLoading } = useQuery({
     queryKey: ["manage-courses"],
@@ -76,6 +116,8 @@ export default function AdminCoursesPage() {
     queryKey: ["departments-list"],
     queryFn: fetchDepartments,
   });
+
+  const visibleDepartments = filterDepartmentsForUser(departments, scopedDept);
 
   const { data: detail, refetch: refetchDetail } = useQuery({
     queryKey: ["course-detail", expanded],
@@ -97,17 +139,24 @@ export default function AdminCoursesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          departmentId: form.departmentId || null,
+          departmentId: lockedDept ?? (form.departmentId || null),
         }),
         credentials: "include",
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
+
+      const courseId = (json.data?.id ?? editingId) as string;
+      if (courseId) {
+        await syncCourseAttachments(courseId, courseAttachments, initialCourseAttachmentIds);
+      }
       return json.data;
     },
     onSuccess: () => {
       toast.success(editingId ? "Course updated" : "Course created");
       setCourseDialog(false);
+      setCourseAttachments([]);
+      setInitialCourseAttachmentIds([]);
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -185,6 +234,8 @@ export default function AdminCoursesPage() {
       title: "", description: "", departmentId: lockedDept ?? "",
       difficulty: "BEGINNER", estimatedHours: 1, status: "DRAFT", isSelfPaced: true,
     });
+    setCourseAttachments([]);
+    setInitialCourseAttachmentIds([]);
     setCourseDialog(true);
   };
 
@@ -237,6 +288,9 @@ export default function AdminCoursesPage() {
                       status: d.status,
                       isSelfPaced: d.isSelfPaced,
                     });
+                    const existing = (d.attachments ?? []) as ExistingAttachment[];
+                    setCourseAttachments(existing);
+                    setInitialCourseAttachmentIds(existing.map((a) => a.id));
                     setCourseDialog(true);
                   }}><Pencil className="h-4 w-4" /></Button>
                 </div>
@@ -323,7 +377,7 @@ export default function AdminCoursesPage() {
       )}
 
       <Dialog open={courseDialog} onOpenChange={setCourseDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
           <DialogHeader><DialogTitle>{editingId ? "Edit Course" : "New Course"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -337,17 +391,24 @@ export default function AdminCoursesPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Department</Label>
-                <Select
-                  value={form.departmentId || "__none__"}
-                  onValueChange={(v) => setForm({ ...form, departmentId: v === "__none__" ? "" : v })}
-                  disabled={!!lockedDept}
-                >
-                  <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">All departments</SelectItem>
-                    {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                {lockedDept ? (
+                  <LockedDepartmentField
+                    departmentId={lockedDept}
+                    departmentName={lockedDeptName}
+                    departments={visibleDepartments}
+                  />
+                ) : (
+                  <Select
+                    value={form.departmentId || "__none__"}
+                    onValueChange={(v) => setForm({ ...form, departmentId: v === "__none__" ? "" : v })}
+                  >
+                    <SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">All departments</SelectItem>
+                      {visibleDepartments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
@@ -361,6 +422,12 @@ export default function AdminCoursesPage() {
                 </Select>
               </div>
             </div>
+            <FileUploadField
+              label="Course files (PDF, video, documents, PPT, Excel)"
+              accept="video/*,.pdf,.doc,.docx,.ppt,.pptx,.txt,.csv,.xls,.xlsx"
+              files={courseAttachments}
+              onFilesChange={setCourseAttachments}
+            />
             <Button className="w-full" onClick={() => saveCourse.mutate()} disabled={!form.title.trim() || saveCourse.isPending}>
               {saveCourse.isPending ? "Saving..." : "Save Course"}
             </Button>

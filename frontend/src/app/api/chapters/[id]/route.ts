@@ -117,7 +117,7 @@ export async function PUT(
       data: {
         ...(data.title !== undefined && { title: data.title }),
         ...(data.description !== undefined && { description: data.description }),
-        ...(data.departmentId !== undefined && { departmentId: data.departmentId }),
+        ...(typeof data.departmentId === "string" && { departmentId: data.departmentId }),
         ...(data.category !== undefined && { category: data.category }),
         ...(data.difficulty !== undefined && { difficulty: data.difficulty }),
         ...(data.estimatedMinutes !== undefined && { estimatedMinutes: data.estimatedMinutes }),

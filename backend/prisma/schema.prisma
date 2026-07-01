@@ -192,6 +192,8 @@ model User {
   assignedTasks      DepartmentTask[]       @relation("TaskAssigner")
   completedTasks     DepartmentTask[]       @relation("TaskCompleter")
   taskUpdates        DepartmentTaskUpdate[]
+  employeeTasksAssigned EmployeeTask[]      @relation("EmployeeTaskAssigner")
+  employeeTasksReceived EmployeeTask[]      @relation("EmployeeTaskAssignee")
 
   @@index([departmentId])
   @@index([role])
@@ -228,10 +230,35 @@ model Department {
   chatConversations ChatConversation[]
   ragDocuments      RagDocument[]
   tasks             DepartmentTask[]
+  employeeTasks     EmployeeTask[]
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
   @@index([status])
+}
+
+model EmployeeTask {
+  id            String                 @id @default(cuid())
+  title         String
+  description   String?                @db.Text
+  departmentId  String
+  department    Department             @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  assigneeId    String
+  assignee      User                   @relation("EmployeeTaskAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
+  assignedById  String
+  assignedBy    User                   @relation("EmployeeTaskAssigner", fields: [assignedById], references: [id])
+  status        DepartmentTaskStatus   @default(ASSIGNED)
+  priority      DepartmentTaskPriority @default(MEDIUM)
+  dueDate       DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([departmentId])
+  @@index([assigneeId])
+  @@index([assignedById])
+  @@index([status])
+  @@index([dueDate])
 }
 
 model DepartmentTask {
@@ -353,11 +380,14 @@ model Attachment {
   sop         SOP?     @relation(fields: [sopId], references: [id], onDelete: Cascade)
   taskId      String?
   task        DepartmentTask? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  courseId    String?
+  course      Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
 
   @@index([chapterId])
   @@index([sopId])
   @@index([taskId])
+  @@index([courseId])
 }
 
 model LearningPath {
@@ -558,6 +588,7 @@ model Course {
   author          User            @relation("CourseAuthor", fields: [authorId], references: [id])
   modules         CourseModule[]
   enrollments     CourseEnrollment[]
+  attachments     Attachment[]
   pathItems       LearningPathItem[]
   progress        Progress[]
   certificates    Certificate[]

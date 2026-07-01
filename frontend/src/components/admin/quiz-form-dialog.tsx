@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { createQuizSchema, updateQuizSchema } from "@/lib/validations";
 import { STATUS_LABELS } from "@/types";
+import { LockedDepartmentField } from "@/components/admin/locked-department-field";
 
 export interface QuizRecord {
   id: string;
@@ -46,6 +47,7 @@ interface QuizFormDialogProps {
   quiz?: QuizRecord | null;
   departments: Department[];
   lockedDepartmentId?: string | null;
+  lockedDepartmentName?: string | null;
   onSubmit: (data: Record<string, unknown>) => Promise<{ id: string } | void>;
 }
 
@@ -55,6 +57,7 @@ export function QuizFormDialog({
   quiz,
   departments,
   lockedDepartmentId,
+  lockedDepartmentName,
   onSubmit,
 }: QuizFormDialogProps) {
   const isEdit = !!quiz;
@@ -122,20 +125,28 @@ export function QuizFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Department</Label>
-              <Controller
-                name="departmentId"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value ?? ""} onValueChange={field.onChange} disabled={!!lockedDepartmentId}>
-                    <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
-                    <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              {lockedDepartmentId ? (
+                <LockedDepartmentField
+                  departmentId={lockedDepartmentId}
+                  departmentName={lockedDepartmentName}
+                  departments={departments}
+                />
+              ) : (
+                <Controller
+                  name="departmentId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value ?? undefined} onValueChange={field.onChange}>
+                      <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+                      <SelectContent>
+                        {departments.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Status</Label>

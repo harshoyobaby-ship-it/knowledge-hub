@@ -24,6 +24,7 @@ import {
 import { chapterSchema, updateChapterSchema } from "@/lib/validations";
 import { DIFFICULTY_LABELS, STATUS_LABELS } from "@/types";
 import { FileUploadField, type ExistingAttachment } from "@/components/admin/file-upload-field";
+import { LockedDepartmentField } from "@/components/admin/locked-department-field";
 
 export interface ChapterRecord {
   id: string;
@@ -51,6 +52,7 @@ interface ChapterFormDialogProps {
   chapter?: ChapterRecord | null;
   departments: Department[];
   lockedDepartmentId?: string | null;
+  lockedDepartmentName?: string | null;
   allowPublishToAll?: boolean;
   onSubmit: (data: Record<string, unknown>) => Promise<{ id: string } | void>;
 }
@@ -92,6 +94,7 @@ export function ChapterFormDialog({
   chapter,
   departments,
   lockedDepartmentId,
+  lockedDepartmentName,
   allowPublishToAll = false,
   onSubmit,
 }: ChapterFormDialogProps) {
@@ -151,7 +154,9 @@ export function ChapterFormDialog({
           <DialogDescription>
             {isEdit
               ? "Update learning module content"
-              : "Share knowledge with one department or publish to all teams at once"}
+              : lockedDepartmentId
+                ? "Share knowledge with your department team"
+                : "Share knowledge with one department or publish to all teams at once"}
           </DialogDescription>
         </DialogHeader>
 
@@ -190,24 +195,32 @@ export function ChapterFormDialog({
                   Publish to all departments
                 </label>
               )}
-              <Controller
-                name="departmentId"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={!!lockedDepartmentId || publishToAll}
-                  >
-                    <SelectTrigger><SelectValue placeholder={publishToAll ? "All departments" : "Select department"} /></SelectTrigger>
-                    <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              {lockedDepartmentId ? (
+                <LockedDepartmentField
+                  departmentId={lockedDepartmentId}
+                  departmentName={lockedDepartmentName}
+                  departments={departments}
+                />
+              ) : (
+                <Controller
+                  name="departmentId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ?? undefined}
+                      onValueChange={field.onChange}
+                      disabled={publishToAll}
+                    >
+                      <SelectTrigger><SelectValue placeholder={publishToAll ? "All departments" : "Select department"} /></SelectTrigger>
+                      <SelectContent>
+                        {departments.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              )}
               {errors.departmentId && (
                 <p className="text-xs text-destructive">{errors.departmentId.message}</p>
               )}
@@ -272,15 +285,17 @@ export function ChapterFormDialog({
 
           <FileUploadField files={attachments} onFilesChange={setAttachments} />
 
-          <div className="space-y-2">
-            <Label htmlFor="founderNotes">Message from Founder (shown to department)</Label>
-            <Textarea
-              id="founderNotes"
-              rows={3}
-              placeholder="Personal guidance or expectations for this department..."
-              {...register("founderNotes")}
-            />
-          </div>
+          {!lockedDepartmentId && (
+            <div className="space-y-2">
+              <Label htmlFor="founderNotes">Message from Founder (shown to department)</Label>
+              <Textarea
+                id="founderNotes"
+                rows={3}
+                placeholder="Personal guidance or expectations for this department..."
+                {...register("founderNotes")}
+              />
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>

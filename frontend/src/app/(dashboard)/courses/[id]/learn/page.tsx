@@ -53,6 +53,13 @@ interface CourseDetail {
   enrolled: boolean;
   myProgress: number;
   modules: Module[];
+  attachments?: {
+    id: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    url: string;
+  }[];
 }
 
 async function fetchCourse(id: string): Promise<CourseDetail> {
@@ -280,6 +287,28 @@ export default function CourseLearnPage({
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        {course.attachments && course.attachments.length > 0 && (
+          <Card className="mx-auto mb-6 max-w-3xl">
+            <CardContent className="p-4">
+              <h2 className="mb-3 font-semibold">Course materials</h2>
+              <ul className="space-y-2">
+                {course.attachments.map((file) => (
+                  <li key={file.id}>
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 rounded-lg border p-3 text-sm hover:bg-accent"
+                    >
+                      <FileText className="h-4 w-4 shrink-0 text-primary" />
+                      <span className="truncate">{file.originalName}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
         {activeLesson ? (
           <div className="mx-auto max-w-3xl space-y-6">
             <div>

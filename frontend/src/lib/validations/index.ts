@@ -259,6 +259,25 @@ export const updateDepartmentTaskSchema = z.object({
 export type DepartmentTaskInput = z.infer<typeof departmentTaskSchema>;
 export type UpdateDepartmentTaskInput = z.infer<typeof updateDepartmentTaskSchema>;
 
+export const createEmployeeTaskSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().optional().nullable(),
+  assigneeId: z.string().min(1),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
+  dueDate: z.string().datetime().optional().nullable(),
+});
+
+export const updateEmployeeTaskSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().optional().nullable(),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
+  dueDate: z.string().datetime().optional().nullable(),
+  status: z.enum(["ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]).optional(),
+});
+
+export type CreateEmployeeTaskInput = z.infer<typeof createEmployeeTaskSchema>;
+export type UpdateEmployeeTaskInput = z.infer<typeof updateEmployeeTaskSchema>;
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

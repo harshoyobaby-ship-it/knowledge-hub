@@ -39,6 +39,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { cn, formatDate } from "@/lib/utils";
 import { STATUS_LABELS } from "@/types";
+import { getScopedDepartment, filterDepartmentsForUser } from "@/lib/department-scope";
 
 interface Department {
   id: string;
@@ -129,8 +130,9 @@ export default function ContentManagementPage() {
   const isFounder =
     user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.ADMIN;
 
-  const lockedDept =
-    user?.role === UserRole.DEPARTMENT_HEAD ? user.departmentId : null;
+  const scopedDept = getScopedDepartment(user);
+  const lockedDept = scopedDept?.id ?? null;
+  const lockedDeptName = scopedDept?.name ?? null;
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -150,6 +152,8 @@ export default function ContentManagementPage() {
     queryKey: ["departments-list"],
     queryFn: fetchDepartments,
   });
+
+  const visibleDepartments = filterDepartmentsForUser(departments, scopedDept);
 
   const { data: chaptersData, isLoading: chaptersLoading } = useQuery({
     queryKey: ["manage-chapters", listParams.toString()],
@@ -459,8 +463,9 @@ export default function ContentManagementPage() {
         open={chapterDialog}
         onOpenChange={setChapterDialog}
         chapter={editingChapter}
-        departments={departments}
+        departments={visibleDepartments}
         lockedDepartmentId={lockedDept}
+        lockedDepartmentName={lockedDeptName}
         allowPublishToAll={isFounder}
         onSubmit={async (data) => {
           if (editingChapter) {
@@ -479,8 +484,9 @@ export default function ContentManagementPage() {
         open={sopDialog}
         onOpenChange={setSOPDialog}
         sop={editingSOP}
-        departments={departments}
+        departments={visibleDepartments}
         lockedDepartmentId={lockedDept}
+        lockedDepartmentName={lockedDeptName}
         onSubmit={async (data) => {
           if (editingSOP) {
             await updateSOP.mutateAsync({ id: editingSOP.id, payload: data });
@@ -495,8 +501,9 @@ export default function ContentManagementPage() {
         open={quizDialog}
         onOpenChange={setQuizDialog}
         quiz={editingQuiz}
-        departments={departments}
+        departments={visibleDepartments}
         lockedDepartmentId={lockedDept}
+        lockedDepartmentName={lockedDeptName}
         onSubmit={async (data) => {
           if (editingQuiz) {
             await updateQuiz.mutateAsync({ id: editingQuiz.id, payload: data });
