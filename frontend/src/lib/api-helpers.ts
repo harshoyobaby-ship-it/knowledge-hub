@@ -7,6 +7,27 @@ import { hasPermission, hasAnyPermission, type Permission } from "./rbac";
 import { prisma } from "./prisma";
 import { Prisma, type AuditAction } from "@prisma/client";
 import { isDatabaseConfigured } from "./db";
+import { RagServiceError } from "./rag-client";
+
+function parseRagErrorMessage(raw: string): string {
+  if (!raw) return "RAG service error";
+  if (raw.includes("<!DOCTYPE") || raw.includes("<html")) {
+    return "RAG service is temporarily unavailable. Please try again in a moment.";
+  }
+  try {
+    const parsed = JSON.parse(raw) as { detail?: unknown; error?: string };
+    if (typeof parsed.error === "string") return parsed.error;
+    if (typeof parsed.detail === "string") return parsed.detail;
+    if (Array.isArray(parsed.detail)) {
+      return parsed.detail
+        .map((item) => (typeof item === "object" && item && "msg" in item ? String(item.msg) : String(item)))
+        .join(", ");
+    }
+  } catch {
+    // use raw text below
+  }
+  return raw.length > 240 ? `${raw.slice(0, 240)}…` : raw;
+}
 
 export function apiSuccess<T>(data: T, status = 200) {
   return NextResponse.json({ success: true, data }, { status });
@@ -36,6 +57,17 @@ export function handleApiError(error: unknown) {
     if (error.message.includes("Invalid URL") || error.message.includes("ENOTFOUND")) {
       return apiError("Database connection failed. Restart the server after updating .env.", 503);
     }
+    if (error.message.includes("fetch failed") || error.message.includes("ECONNREFUSED")) {
+      return apiError(
+        "AI service is not reachable. Set RAG_SERVICE_URL on Vercel to your Render RAG URL.",
+        503
+      );
+    }
+  }
+  if (error instanceof RagServiceError) {
+    const message = parseRagErrorMessage(error.message);
+    const status = error.status === 401 ? 401 : error.status >= 500 ? 503 : error.status;
+    return apiError(message, status);
   }
   console.error("API Error:", error);
   return apiError("Internal server error", 500);

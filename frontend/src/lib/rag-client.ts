@@ -1,4 +1,8 @@
-const RAG_SERVICE_URL = process.env.RAG_SERVICE_URL ?? "http://localhost:8000";
+const RAG_SERVICE_URL =
+  process.env.RAG_SERVICE_URL?.trim() ||
+  (process.env.NODE_ENV === "production"
+    ? "https://kharesiya-rag.onrender.com"
+    : "http://localhost:8000");
 
 export class RagServiceError extends Error {
   constructor(
@@ -22,11 +26,19 @@ export async function ragFetch(
     headers.set("Content-Type", "application/json");
   }
 
-  return fetch(`${RAG_SERVICE_URL}${path}`, {
-    ...init,
-    headers,
-    cache: "no-store",
-  });
+  try {
+    return await fetch(`${RAG_SERVICE_URL}${path}`, {
+      ...init,
+      headers,
+      cache: "no-store",
+    });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "Network error";
+    throw new RagServiceError(
+      `Cannot reach RAG service (${RAG_SERVICE_URL}): ${reason}`,
+      503
+    );
+  }
 }
 
 export async function ragJson<T>(
