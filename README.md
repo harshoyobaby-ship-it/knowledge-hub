@@ -53,5 +53,6 @@ Set `NEXT_PUBLIC_APP_URL` and `RAG_SERVICE_URL` in production `.env`.
 
 ## Test logins
 
-- Admin: `admin@kharesiya.com` / `Admin@123456`
+- Super Admin: `admin@kharesiya.com` / `SuperAdmin@123456` → Admin dashboard
+- Founder: `founder@kharesiya.com` / `Founder@123456` → Founder hub
 - Employee: `employee@kharesiya.com` / `Employee@123456`

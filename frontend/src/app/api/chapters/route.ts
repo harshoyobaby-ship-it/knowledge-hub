@@ -16,7 +16,7 @@ import {
 } from "@/lib/content";
 import { getLearnerContentFilter } from "@/lib/department-access";
 import { chapterSchema } from "@/lib/validations";
-import { isFounder } from "@/lib/founder";
+import { isFounder, isFounderRole } from "@/lib/founder";
 import { notifyDepartmentOfFounderKnowledge } from "@/lib/founder-notify";
 
 export async function GET(request: Request) {
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
     const status = data.status ?? "DRAFT";
 
     if (data.publishToAllDepartments) {
-      if (!isFounder(auth)) {
+      if (!isFounderRole(auth.role)) {
         return apiError("Only the founder can publish to all departments", 403);
       }
 
@@ -221,7 +221,7 @@ export async function POST(request: Request) {
       },
     });
 
-    if (status === "PUBLISHED" && isFounder(auth)) {
+    if (status === "PUBLISHED" && isFounderRole(auth.role)) {
       await notifyDepartmentOfFounderKnowledge({
         departmentId: data.departmentId,
         title: chapter.title,

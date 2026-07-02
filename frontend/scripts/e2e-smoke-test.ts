@@ -66,14 +66,14 @@ async function main() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      email: "admin@kharesiya.com",
-      password: "Admin@123456",
+      email: "founder@kharesiya.com",
+      password: "Founder@123456",
     }),
   });
   const realLoginJson = await realLoginRes.json();
   const realCookie = getCookie(realLoginRes, "kh_auth_token");
   record(
-    "Real login (admin@kharesiya.com)",
+    "Real login (founder@kharesiya.com)",
     realLoginRes.status === 200 && realLoginJson.success && !!realCookie,
     `status ${realLoginRes.status}, user: ${realLoginJson.data?.user?.email ?? realLoginJson.error}`
   );

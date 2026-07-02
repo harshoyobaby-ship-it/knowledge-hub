@@ -54,6 +54,7 @@ interface ChapterFormDialogProps {
   lockedDepartmentId?: string | null;
   lockedDepartmentName?: string | null;
   allowPublishToAll?: boolean;
+  defaultPublishToAll?: boolean;
   onSubmit: (data: Record<string, unknown>) => Promise<{ id: string } | void>;
 }
 
@@ -96,6 +97,7 @@ export function ChapterFormDialog({
   lockedDepartmentId,
   lockedDepartmentName,
   allowPublishToAll = false,
+  defaultPublishToAll = false,
   onSubmit,
 }: ChapterFormDialogProps) {
   const isEdit = !!chapter;
@@ -142,9 +144,9 @@ export function ChapterFormDialog({
         status: (chapter?.status as "DRAFT") ?? "DRAFT",
         publishToAllDepartments: false,
       });
-      setPublishToAll(false);
+      setPublishToAll(!isEdit && defaultPublishToAll);
     }
-  }, [open, chapter, lockedDepartmentId, reset]);
+  }, [open, chapter, lockedDepartmentId, reset, isEdit, defaultPublishToAll]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

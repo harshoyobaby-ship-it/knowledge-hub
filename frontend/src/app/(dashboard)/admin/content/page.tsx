@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -110,8 +111,9 @@ async function fetchSOPDetail(id: string): Promise<SOPRecord> {
   return json.data;
 }
 
-export default function ContentManagementPage() {
+function ContentManagementPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState("chapters");
   const [search, setSearch] = useState("");
@@ -126,9 +128,9 @@ export default function ContentManagementPage() {
   const [editingQuiz, setEditingQuiz] = useState<QuizRecord | null>(null);
   const [questionsQuiz, setQuestionsQuiz] = useState<QuizRecord | null>(null);
   const [questionsDialog, setQuestionsDialog] = useState(false);
+  const [defaultPublishToAll, setDefaultPublishToAll] = useState(false);
 
-  const isFounder =
-    user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.ADMIN;
+  const isFounder = user?.role === UserRole.ADMIN;
 
   const scopedDept = getScopedDepartment(user);
   const lockedDept = scopedDept?.id ?? null;
@@ -138,6 +140,15 @@ export default function ContentManagementPage() {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(t);
   }, [search]);
+
+  useEffect(() => {
+    if (searchParams.get("publishAll") === "1" && isFounder) {
+      setTab("chapters");
+      setEditingChapter(null);
+      setDefaultPublishToAll(true);
+      setChapterDialog(true);
+    }
+  }, [searchParams, isFounder]);
 
   const listParams = new URLSearchParams({ limit: "50" });
   if (debouncedSearch) listParams.set("search", debouncedSearch);
@@ -461,12 +472,16 @@ export default function ContentManagementPage() {
 
       <ChapterFormDialog
         open={chapterDialog}
-        onOpenChange={setChapterDialog}
+        onOpenChange={(open) => {
+          setChapterDialog(open);
+          if (!open) setDefaultPublishToAll(false);
+        }}
         chapter={editingChapter}
         departments={visibleDepartments}
         lockedDepartmentId={lockedDept}
         lockedDepartmentName={lockedDeptName}
         allowPublishToAll={isFounder}
+        defaultPublishToAll={defaultPublishToAll}
         onSubmit={async (data) => {
           if (editingChapter) {
             await updateChapter.mutateAsync({ id: editingChapter.id, payload: data });
@@ -523,6 +538,14 @@ export default function ContentManagementPage() {
         quizTitle={questionsQuiz?.title}
       />
     </div>
+  );
+}
+
+export default function ContentManagementPageWrapper() {
+  return (
+    <Suspense fallback={<LoadingSkeleton className="h-96" />}>
+      <ContentManagementPage />
+    </Suspense>
   );
 }
 

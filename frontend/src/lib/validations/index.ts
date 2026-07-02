@@ -238,14 +238,23 @@ export const attachmentInputSchema = z.object({
   url: z.string().min(1),
 });
 
-export const departmentTaskSchema = z.object({
+const departmentTaskFields = z.object({
   title: z.string().min(1).max(200),
   description: z.string().optional().nullable(),
-  departmentId: z.string().min(1),
+  departmentId: z.string().optional(),
+  assignToAllDepartments: z.boolean().optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
   dueDate: z.string().datetime().optional().nullable(),
   attachments: z.array(attachmentInputSchema).optional(),
 });
+
+export const departmentTaskSchema = departmentTaskFields.refine(
+  (data) => data.assignToAllDepartments || (data.departmentId && data.departmentId.length > 0),
+  {
+    message: "Select a department or assign to all departments",
+    path: ["departmentId"],
+  }
+);
 
 export const updateDepartmentTaskSchema = z.object({
   title: z.string().min(1).max(200).optional(),

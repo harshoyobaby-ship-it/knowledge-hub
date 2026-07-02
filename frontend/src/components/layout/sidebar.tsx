@@ -30,6 +30,15 @@ import {
 import { cn } from "@/lib/utils";
 import { UserRole } from "@prisma/client";
 
+const superAdminPanelItems = [
+  { href: "/admin", label: "Admin Dashboard", icon: Shield },
+  { href: "/admin/users", label: "Members", icon: UserCog },
+  { href: "/departments", label: "Departments", icon: Building2 },
+  { href: "/admin/email", label: "Email Automation", icon: Mail },
+  { href: "/founder", label: "Founder Hub", icon: Crown },
+  { href: "/profile", label: "Profile", icon: User },
+];
+
 const founderPanelItems = [
   { href: "/founder", label: "Founder Hub", icon: Crown },
   { href: "/admin/content", label: "Publish Knowledge", icon: FolderOpen },
@@ -112,7 +121,11 @@ interface SidebarProps {
 }
 
 function isFounderRole(role?: UserRole): boolean {
-  return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
+  return role === UserRole.ADMIN;
+}
+
+function isSuperAdminRole(role?: UserRole): boolean {
+  return role === UserRole.SUPER_ADMIN;
 }
 
 function isManagerRole(role?: UserRole): boolean {
@@ -122,17 +135,20 @@ function isManagerRole(role?: UserRole): boolean {
 export function Sidebar({ collapsed, onToggle, userRole }: SidebarProps) {
   const pathname = usePathname();
   const isHrPanel = userRole === UserRole.HR;
+  const isSuperAdminPanel = isSuperAdminRole(userRole);
   const isFounderPanel = isFounderRole(userRole);
   const isManagerPanel = isManagerRole(userRole);
   const primaryNav = isHrPanel
     ? hrPanelItems
+    : isSuperAdminPanel
+      ? superAdminPanelItems
     : isFounderPanel
       ? founderPanelItems
       : isManagerPanel
         ? managerPanelItems
         : learnerItems;
   const visiblePanels =
-    isHrPanel || isManagerPanel || isFounderPanel
+    isHrPanel || isManagerPanel || isFounderPanel || isSuperAdminPanel
       ? []
       : panelItems.filter((item) => roleMatches(userRole, item.roles));
 
@@ -149,6 +165,8 @@ export function Sidebar({ collapsed, onToggle, userRole }: SidebarProps) {
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
             isHrPanel
               ? "bg-emerald-600"
+              : isSuperAdminPanel
+                ? "bg-violet-600"
               : isFounderPanel
                 ? "bg-amber-600"
                 : isManagerPanel
@@ -158,6 +176,8 @@ export function Sidebar({ collapsed, onToggle, userRole }: SidebarProps) {
         >
           {isHrPanel ? (
             <Users className="h-5 w-5 text-white" />
+          ) : isSuperAdminPanel ? (
+            <Shield className="h-5 w-5 text-white" />
           ) : isFounderPanel ? (
             <Crown className="h-5 w-5 text-white" />
           ) : isManagerPanel ? (
@@ -169,11 +189,13 @@ export function Sidebar({ collapsed, onToggle, userRole }: SidebarProps) {
         {!collapsed && (
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">
-              {isHrPanel ? "HR Panel" : isFounderPanel ? "Founder Hub" : isManagerPanel ? "Manager Panel" : "Kharesiya"}
+              {isHrPanel ? "HR Panel" : isSuperAdminPanel ? "Super Admin" : isFounderPanel ? "Founder Hub" : isManagerPanel ? "Manager Panel" : "Kharesiya"}
             </p>
             <p className="truncate text-xs text-sidebar-foreground/60">
               {isHrPanel
                 ? "Employee training oversight"
+                : isSuperAdminPanel
+                  ? "System administration"
                 : isFounderPanel
                   ? "Knowledge for every department"
                   : isManagerPanel
@@ -193,9 +215,9 @@ export function Sidebar({ collapsed, onToggle, userRole }: SidebarProps) {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {!collapsed && (isHrPanel || isManagerPanel || isFounderPanel) && (
+        {!collapsed && (isHrPanel || isSuperAdminPanel || isManagerPanel || isFounderPanel) && (
           <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-            {isHrPanel ? "HR Admin" : isFounderPanel ? "Founder" : "Department Manager"}
+            {isHrPanel ? "HR Admin" : isSuperAdminPanel ? "Super Admin" : isFounderPanel ? "Founder" : "Department Manager"}
           </p>
         )}
         {primaryNav.map((item) => {

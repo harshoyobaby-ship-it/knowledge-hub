@@ -31,10 +31,22 @@ async function fetchCoverage() {
 
 const quickActions = [
   {
+    href: "/admin/content?publishAll=1",
+    label: "Broadcast Knowledge",
+    description: "Publish one chapter to every department at once",
+    icon: BookOpen,
+  },
+  {
+    href: "/admin/tasks?allDepts=1",
+    label: "Broadcast Task",
+    description: "Assign the same directive to all departments",
+    icon: ListTodo,
+  },
+  {
     href: "/admin/content",
     label: "Publish Knowledge",
-    description: "Share chapters, SOPs, and quizzes with departments",
-    icon: BookOpen,
+    description: "Share chapters, SOPs, and quizzes with one department",
+    icon: FolderOpen,
   },
   {
     href: "/admin/tasks",
@@ -83,12 +95,26 @@ export default function FounderHubPage() {
         title={`Welcome, ${user?.firstName ?? "Founder"}`}
         description="Your command center to provide knowledge and direction to every department at Kharesiya Brands"
         actions={
-          <Button asChild>
-            <Link href="/admin/content">
-              <Plus className="mr-2 h-4 w-4" />
-              Publish to departments
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link href="/admin/tasks?allDepts=1">
+                <ListTodo className="mr-2 h-4 w-4" />
+                Task to all departments
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/content?publishAll=1">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Knowledge to all departments
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/admin/content">
+                <Plus className="mr-2 h-4 w-4" />
+                Publish to one department
+              </Link>
+            </Button>
+          </div>
         }
       />
 

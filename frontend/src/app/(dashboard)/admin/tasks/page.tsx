@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Plus, ListTodo, Building2, Calendar, ArrowRight, Paperclip } from "lucide-react";
@@ -48,9 +49,11 @@ async function fetchDepartments() {
   return json.data;
 }
 
-export default function FounderTasksPage() {
+function FounderTasksPage() {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const [assignToAll, setAssignToAll] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [form, setForm] = useState({
@@ -65,7 +68,15 @@ export default function FounderTasksPage() {
   function resetForm() {
     setForm({ title: "", description: "", departmentId: "", priority: "MEDIUM", dueDate: "" });
     setAttachments([]);
+    setAssignToAll(false);
   }
+
+  useEffect(() => {
+    if (searchParams.get("allDepts") === "1") {
+      setAssignToAll(true);
+      setOpen(true);
+    }
+  }, [searchParams]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["founder-tasks", statusFilter, departmentFilter],
@@ -83,7 +94,11 @@ export default function FounderTasksPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
+          title: form.title,
+          description: form.description,
+          departmentId: assignToAll ? undefined : form.departmentId,
+          assignToAllDepartments: assignToAll,
+          priority: form.priority,
           dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null,
           attachments: attachments.length
             ? attachments.map(({ filename, originalName, mimeType, size, url }) => ({
@@ -101,10 +116,14 @@ export default function FounderTasksPage() {
       if (!res.ok) throw new Error(json.error);
       return json.data;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["founder-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["department-tasks"] });
-      toast.success("Task assigned to department");
+      toast.success(
+        result?.bulk
+          ? `Task assigned to ${result.count} departments`
+          : "Task assigned to department"
+      );
       setOpen(false);
       resetForm();
     },
@@ -232,19 +251,40 @@ export default function FounderTasksPage() {
             </div>
             <div>
               <Label htmlFor="department">Department</Label>
-              <Select
-                value={form.departmentId}
-                onValueChange={(v) => setForm({ ...form, departmentId: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((d: { id: string; name: string }) => (
-                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="mb-2 flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={assignToAll}
+                  onChange={(e) => {
+                    setAssignToAll(e.target.checked);
+                    if (e.target.checked) {
+                      setForm({ ...form, departmentId: "" });
+                    }
+                  }}
+                  className="rounded border-input"
+                />
+                Assign to all departments
+              </label>
+              {!assignToAll && (
+                <Select
+                  value={form.departmentId}
+                  onValueChange={(v) => setForm({ ...form, departmentId: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((d: { id: string; name: string }) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {assignToAll && (
+                <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                  This task will be sent to every active department ({departments.length} teams).
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="description">Instructions</Label>
@@ -290,14 +330,22 @@ export default function FounderTasksPage() {
             />
             <Button
               className="w-full"
-              disabled={!form.title || !form.departmentId || createTask.isPending}
+              disabled={!form.title || (!assignToAll && !form.departmentId) || createTask.isPending}
               onClick={() => createTask.mutate()}
             >
-              Assign to department
+              {assignToAll ? "Assign to all departments" : "Assign to department"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function FounderTasksPageWrapper() {
+  return (
+    <Suspense fallback={<LoadingSkeleton className="h-96" />}>
+      <FounderTasksPage />
+    </Suspense>
   );
 }

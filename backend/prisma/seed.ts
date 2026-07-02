@@ -48,11 +48,20 @@ async function main() {
   const users = [
     {
       email: "admin@kharesiya.com",
-      password: "Admin@123456",
+      password: "SuperAdmin@123456",
       firstName: "Super",
       lastName: "Admin",
       role: UserRole.SUPER_ADMIN,
       jobTitle: "System Administrator",
+      departmentId: null,
+    },
+    {
+      email: "founder@kharesiya.com",
+      password: "Founder@123456",
+      firstName: "Kharesiya",
+      lastName: "Founder",
+      role: UserRole.ADMIN,
+      jobTitle: "Founder",
       departmentId: null,
     },
     {
@@ -127,12 +136,116 @@ async function main() {
     console.log(`✓ User: ${u.email} (${u.role})`);
   }
 
-  const admin = await prisma.user.findUnique({ where: { email: "admin@kharesiya.com" } });
-  if (!admin) throw new Error("Admin user not found");
+  const founder = await prisma.user.findUnique({ where: { email: "founder@kharesiya.com" } });
+  if (!founder) throw new Error("Founder user not found");
 
   const deptByName = Object.fromEntries(
     (await prisma.department.findMany()).map((d) => [d.name, d.id])
   );
+
+  // Company-wide mandatory module (published to every department).
+  // This is intentionally seeded as a Knowledge Chapter so it appears in "Learning Modules"
+  // across all role panels without requiring LearningPath support for SOP items.
+  const EMAIL_SOP_MODULE_TITLE = "Module 1 (Mandatory): Official Email Communication SOP";
+  const EMAIL_SOP_ATTACHMENTS = [
+    {
+      filename: "email-sop-v1.pdf",
+      originalName: "EMAIL STANDARD OPERATING PROCEDURE.pdf",
+      mimeType: "application/pdf",
+      size: 396833,
+      url: "/policies/email-sop-v1.pdf",
+    },
+    {
+      filename: "email-sop-v1.docx",
+      originalName: "EMAIL STANDARD OPERATING PROCEDURE.docx",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      size: 34993,
+      url: "/policies/email-sop-v1.docx",
+    },
+  ] as const;
+
+  const emailSopHtml = `
+<h2>Official Email Communication Policy (SOP)</h2>
+<p><strong>Applies to:</strong> All employees, consultants, interns, vendors and business associates using official company email.</p>
+<p><strong>Effective date:</strong> 01-07-2026</p>
+
+<h3>Purpose</h3>
+<ul>
+  <li>Improve communication efficiency</li>
+  <li>Reduce unnecessary emails</li>
+  <li>Ensure accountability and records</li>
+  <li>Protect confidential information and prevent leakage</li>
+</ul>
+
+<h3>General Principles</h3>
+<p>Every email must be necessary, professional, relevant, concise, accurate, action-oriented, and free from emotional language.</p>
+
+<h3>Golden Rules</h3>
+<ol>
+  <li>Only mark people who are genuinely required</li>
+  <li><strong>TO = Action</strong></li>
+  <li><strong>CC = Information</strong></li>
+  <li><strong>BCC = Privacy</strong> (exceptional situations only)</li>
+  <li>One email = one primary purpose</li>
+  <li>Avoid unnecessary Reply All</li>
+  <li>Verify recipients, subject, attachments, grammar, dates, and confidentiality before sending</li>
+</ol>
+
+<p><strong>Download and read the full SOP</strong> from the attachments on this module.</p>
+`.trim();
+
+  const allDepartments = await prisma.department.findMany({
+    where: { status: "ACTIVE" },
+    select: { id: true, name: true },
+  });
+
+  for (const dept of allDepartments) {
+    const existingModule = await prisma.knowledgeChapter.findFirst({
+      where: { title: EMAIL_SOP_MODULE_TITLE, departmentId: dept.id },
+      select: { id: true },
+    });
+
+    const module =
+      existingModule ??
+      (await prisma.knowledgeChapter.create({
+        data: {
+          title: EMAIL_SOP_MODULE_TITLE,
+          description: "Company-wide mandatory SOP for official email communication standards.",
+          departmentId: dept.id,
+          category: "Onboarding",
+          difficulty: "BEGINNER",
+          estimatedMinutes: 20,
+          content: emailSopHtml,
+          founderNotes:
+            "Mandatory for everyone. Ensure your team follows TO/CC/BCC rules, subject format, and confidentiality guidelines.",
+          references: [],
+          status: "PUBLISHED",
+          publishedAt: new Date(),
+          authorId: founder.id,
+        },
+        select: { id: true },
+      }));
+
+    for (const file of EMAIL_SOP_ATTACHMENTS) {
+      const existing = await prisma.attachment.findFirst({
+        where: { chapterId: module.id, originalName: file.originalName },
+        select: { id: true },
+      });
+      if (!existing) {
+        await prisma.attachment.create({
+          data: {
+            chapterId: module.id,
+            filename: file.filename,
+            originalName: file.originalName,
+            mimeType: file.mimeType,
+            size: file.size,
+            url: file.url,
+          },
+        });
+      }
+    }
+  }
+  console.log(`✓ Mandatory Module 1 seeded for ${allDepartments.length} departments`);
 
   type Difficulty = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
 
@@ -522,7 +635,7 @@ async function main() {
             founderNotes: ch.founderNotes,
             status: "PUBLISHED",
             publishedAt: new Date(),
-            authorId: admin.id,
+            authorId: founder.id,
           },
         });
         chapterCount++;
@@ -537,7 +650,7 @@ async function main() {
         data: {
           title: content.sopTitle,
           departmentId,
-          ownerId: admin.id,
+          ownerId: founder.id,
           effectiveDate: new Date(),
           status: "PUBLISHED",
           approvalStatus: "APPROVED",
@@ -556,7 +669,7 @@ async function main() {
           departmentId,
           passingPercentage: content.passingPercentage,
           status: "PUBLISHED",
-          authorId: admin.id,
+          authorId: founder.id,
           questions: { create: defaultQuestions },
         },
       });
@@ -577,7 +690,7 @@ async function main() {
           status: "PUBLISHED",
           isSelfPaced: true,
           publishedAt: new Date(),
-          authorId: admin.id,
+          authorId: founder.id,
           modules: {
             create: [
               {
@@ -682,7 +795,7 @@ async function main() {
     }
   }
 
-  if (admin) {
+  if (founder) {
     const sampleTasks = [
       {
         title: "Complete SKU artwork review for Q3 launch",
@@ -725,12 +838,12 @@ async function main() {
           title: sample.title,
           description: sample.description,
           departmentId: dept.id,
-          assignedById: admin.id,
+          assignedById: founder.id,
           priority: sample.priority,
           dueDate: new Date(Date.now() + sample.dueDays * 24 * 60 * 60 * 1000),
           updates: {
             create: {
-              userId: admin.id,
+              userId: founder.id,
               status: "ASSIGNED",
               note: "Task assigned by founder",
             },
@@ -746,7 +859,8 @@ async function main() {
 
   console.log("\n✅ Seed complete!\n");
   console.log("Login credentials:");
-  console.log("  Admin:    admin@kharesiya.com    / Admin@123456");
+  console.log("  Super Admin: admin@kharesiya.com    / SuperAdmin@123456");
+  console.log("  Founder:     founder@kharesiya.com / Founder@123456");
   console.log("  HR:       hr@kharesiya.com       / Hr@123456");
   console.log("  Manager:  manager@kharesiya.com  / Manager@123456");
   console.log("  Employee: employee@kharesiya.com / Employee@123456");
