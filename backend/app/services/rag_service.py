@@ -27,10 +27,14 @@ class RAGService:
         self.embedder = embedder or get_embedder()
         self.llm = llm or get_llm_client()
 
-    def _department_filter(self, department_id: str | None) -> dict[str, str] | None:
+    def _department_filter(self, department_id: str | None) -> dict | None:
+        """Scope retrieval to a user's department, but always include company-wide docs.
+
+        We treat `department_id == ""` as "company-wide" in vector metadata.
+        """
         if not department_id:
             return None
-        return {"department_id": department_id}
+        return {"$or": [{"department_id": department_id}, {"department_id": ""}]}
 
     def _build_context(self, results: list) -> str:
         parts: list[str] = []

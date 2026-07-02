@@ -23,6 +23,7 @@ import {
   Bot,
   Presentation,
   BarChart3,
+  Database,
   Crown,
   ListTodo,
   Mail,
@@ -34,7 +35,9 @@ const superAdminPanelItems = [
   { href: "/admin", label: "Admin Dashboard", icon: Shield },
   { href: "/admin/users", label: "Members", icon: UserCog },
   { href: "/departments", label: "Departments", icon: Building2 },
+  { href: "/admin/rag", label: "Knowledge Index", icon: Database },
   { href: "/admin/email", label: "Email Automation", icon: Mail },
+  { href: "/assistant", label: "AI Chat", icon: Bot },
   { href: "/founder", label: "Founder Hub", icon: Crown },
   { href: "/profile", label: "Profile", icon: User },
 ];
@@ -42,9 +45,11 @@ const superAdminPanelItems = [
 const founderPanelItems = [
   { href: "/founder", label: "Founder Hub", icon: Crown },
   { href: "/admin/content", label: "Publish Knowledge", icon: FolderOpen },
+  { href: "/admin/rag", label: "Knowledge Index", icon: Database },
   { href: "/admin/tasks", label: "Assign Tasks", icon: ListTodo },
   { href: "/admin/courses", label: "Courses", icon: GraduationCap },
   { href: "/admin/learning-paths", label: "Learning Paths", icon: Route },
+  { href: "/assistant", label: "AI Chat", icon: Bot },
   { href: "/departments", label: "Departments", icon: Building2 },
   { href: "/admin/users", label: "Team Members", icon: UserCog },
   { href: "/profile", label: "Profile", icon: User },
@@ -58,6 +63,7 @@ const managerPanelItems = [
   { href: "/admin/content", label: "Department Content", icon: FolderOpen },
   { href: "/admin/courses", label: "Courses", icon: GraduationCap },
   { href: "/admin/learning-paths", label: "Learning Paths", icon: Route },
+  { href: "/assistant", label: "AI Chat", icon: Bot },
   { href: "/profile", label: "Profile", icon: User },
 ];
 
@@ -66,6 +72,7 @@ const hrPanelItems = [
   { href: "/hr/employees", label: "Employee Progress", icon: TrendingUp },
   { href: "/admin/users", label: "Members", icon: UserCog },
   { href: "/admin/email", label: "Email Automation", icon: Mail },
+  { href: "/assistant", label: "AI Chat", icon: Bot },
   { href: "/profile", label: "Profile", icon: User },
 ];
 
@@ -93,6 +100,7 @@ type PanelItem = {
 };
 
 const panelItems: PanelItem[] = [
+  { href: "/admin/rag", label: "Knowledge Index", icon: Database, roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN] },
   { href: "/admin", label: "Admin Panel", icon: Shield, roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN] },
   { href: "/admin/tasks", label: "Founder Tasks", icon: ListTodo, roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN] },
   { href: "/admin/content", label: "Content", icon: FolderOpen, roles: [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.HR, UserRole.MANAGER, UserRole.DEPARTMENT_HEAD, UserRole.TRAINER] },

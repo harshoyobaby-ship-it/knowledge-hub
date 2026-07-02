@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, Integer, String, Text, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -76,7 +76,7 @@ class RagIngestionJob(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     document_id: Mapped[str] = mapped_column(
-        "documentId", String, index=True
+        "documentId", String, ForeignKey("rag_documents.id"), index=True
     )
     status: Mapped[RagIngestionStatus] = mapped_column(
         Enum(RagIngestionStatus, name="RagIngestionStatus", native_enum=True),

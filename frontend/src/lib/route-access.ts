@@ -11,6 +11,7 @@ export interface RouteRule {
 export const ROUTE_RULES: RouteRule[] = [
   { prefix: "/manager/tasks", permissions: ["MANAGE_ASSIGNMENTS"] },
   { prefix: "/founder", permissions: ["ASSIGN_FOUNDER_TASKS"] },
+  { prefix: "/admin/rag", permissions: ["MANAGE_RAG"] },
   { prefix: "/admin/tasks", permissions: ["ASSIGN_FOUNDER_TASKS"] },
   { prefix: "/admin/users", permissions: ["MANAGE_USERS"] },
   { prefix: "/admin/content", permissions: ["MANAGE_CONTENT"] },

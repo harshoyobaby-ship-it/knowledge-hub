@@ -10,6 +10,7 @@ from app.schemas.health import HealthResponse
 from app.services.llm.factory import get_llm_client
 from app.services.embedder.factory import get_embedder
 from app.services.vector.factory import get_vector_store
+from app.services.vector.pinecone_store import PineconeVectorStore
 
 router = APIRouter(tags=["health"])
 settings = get_settings()
@@ -52,6 +53,14 @@ async def readiness_check() -> HealthResponse:
     vector_store = get_vector_store()
     store_name = "pinecone" if settings.use_pinecone else "local_vectors"
     services[store_name] = "healthy" if await vector_store.health_check() else "unhealthy"
+
+    # Report Pinecone key health even when VECTOR_STORE=local (dev fallback).
+    if not settings.use_pinecone and settings.pinecone_api_key.strip():
+        try:
+            pinecone_probe = PineconeVectorStore()
+            services["pinecone"] = "healthy" if await pinecone_probe.health_check() else "unhealthy"
+        except Exception:
+            services["pinecone"] = "unhealthy"
 
     critical = ["database", embedder_name, llm_name, store_name]
     overall = "healthy" if all(services.get(s) == "healthy" for s in critical) else "degraded"

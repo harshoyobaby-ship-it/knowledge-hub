@@ -16,6 +16,7 @@ import {
   Bot,
   ListTodo,
   Mail,
+  Database,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
@@ -40,7 +41,8 @@ const quickLinks = [
   { href: "/admin/courses", label: "Courses", description: "Modules, lessons, uploads", icon: GraduationCap },
   { href: "/admin/learning-paths", label: "Learning Paths", description: "Onboarding journeys", icon: Route },
   { href: "/departments", label: "Departments", description: "Org structure", icon: Building2 },
-  { href: "/assistant", label: "AI Settings", description: "RAG & vector database", icon: Bot },
+  { href: "/admin/rag", label: "Knowledge Index", description: "Bulk upload & AI indexing", icon: Database },
+  { href: "/assistant", label: "AI Chat", description: "Ask questions from indexed knowledge", icon: Bot },
   { href: "/admin/email", label: "Email Automation", description: "Weekly training reminders", icon: Mail },
 ];
 

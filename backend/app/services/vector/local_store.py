@@ -40,7 +40,16 @@ class LocalVectorStore:
     def _matches_filter(self, metadata: dict[str, Any], filter_metadata: dict[str, Any] | None) -> bool:
         if not filter_metadata:
             return True
+
+        if "$or" in filter_metadata:
+            clauses = filter_metadata["$or"]
+            if not isinstance(clauses, list):
+                return False
+            return any(self._matches_filter(metadata, clause) for clause in clauses)
+
         for key, condition in filter_metadata.items():
+            if key.startswith("$"):
+                continue
             if isinstance(condition, dict) and "$eq" in condition:
                 if metadata.get(key) != condition["$eq"]:
                     return False
@@ -99,3 +108,29 @@ class LocalVectorStore:
 
     async def health_check(self) -> bool:
         return True
+
+    async def list_documents(self, namespace: str | None = None) -> list[dict[str, Any]]:
+        async with self._lock:
+            data = await asyncio.to_thread(self._load)
+
+        docs: dict[str, dict[str, Any]] = {}
+        ns = namespace or ""
+        for entry in data.get("vectors", {}).values():
+            if entry.get("namespace", "") != ns:
+                continue
+            meta = entry.get("metadata", {})
+            doc_id = meta.get("document_id")
+            if not doc_id:
+                continue
+            if doc_id not in docs:
+                docs[doc_id] = {
+                    "document_id": doc_id,
+                    "title": meta.get("title", doc_id),
+                    "department_id": meta.get("department_id", ""),
+                    "source_type": meta.get("source_type", "UPLOAD"),
+                    "filename": meta.get("filename", ""),
+                    "chunk_count": 0,
+                }
+            docs[doc_id]["chunk_count"] += 1
+
+        return sorted(docs.values(), key=lambda item: str(item["title"]).lower())

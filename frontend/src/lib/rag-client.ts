@@ -42,12 +42,20 @@ export async function ragJson<T>(
   return response.json() as Promise<T>;
 }
 
-export async function getRagHealth(): Promise<unknown> {
-  const response = await fetch(`${RAG_SERVICE_URL}/health`, { cache: "no-store" });
+export type RagHealthServices = Record<string, string>;
+
+export interface RagHealth {
+  status: string;
+  version?: string;
+  services?: RagHealthServices;
+}
+
+export async function getRagHealth(): Promise<RagHealth> {
+  const response = await fetch(`${RAG_SERVICE_URL}/health/ready`, { cache: "no-store" });
   if (!response.ok) {
     throw new RagServiceError("RAG service unavailable", response.status);
   }
-  return response.json();
+  return response.json() as Promise<RagHealth>;
 }
 
 export interface RagSession {
